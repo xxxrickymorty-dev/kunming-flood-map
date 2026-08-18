@@ -507,18 +507,22 @@ function refreshDistrictStats() {
   HIST.forEach((p) => { const k = districtKey(p.district); if (hi[k] != null) hi[k]++; });
   DISTRICTS.forEach((k) => {
     const btn = document.querySelector(`.topnav [data-view="d-${k}"]`);
-    if (btn) btn.textContent = `${k} ${ev[k] + hi[k]}`;
+    if (!btn) return;
+    const total = ev[k] + hi[k];
+    btn.hidden = total === 0;
+    if (total > 0) btn.textContent = `${k} ${total}`;
   });
   const bar = document.getElementById("district-bars");
   if (bar) {
-    const max = Math.max(...DISTRICTS.map((k) => ev[k]), 1);
+    const shown = DISTRICTS.filter((k) => ev[k] + hi[k] > 0);
+    const max = Math.max(...shown.map((k) => ev[k] + hi[k]), 1);
     bar.innerHTML = "";
-    DISTRICTS.forEach((name) => {
-      const n = ev[name];
+    shown.forEach((name) => {
+      const n = ev[name] + hi[name];
       const a = ADMIN_BY_KEY[name];
       const row = document.createElement("div");
-      row.className = "bar-row" + (n === 0 ? " zero" : "");
-      row.innerHTML = `<span title="${esc(a.code + " " + a.full)}">${esc(name)}</span><div class="bar-track"><div class="bar-fill"></div></div><span>${n}</span>`;
+      row.className = "bar-row";
+      row.innerHTML = `<span title="${esc(a.code + " " + a.full + " · 事件 " + ev[name] + " · 图层 " + hi[name])}">${esc(name)}</span><div class="bar-track"><div class="bar-fill"></div></div><span>${n}</span>`;
       row.querySelector(".bar-fill").style.setProperty("--w", `${(n / max) * 100}%`);
       bar.appendChild(row);
     });
@@ -533,18 +537,17 @@ function refreshDistrictStats() {
       西山: "华昌×采莲、永昌/云纺、豆腐营低洼带；前卫西路×广福路（十一家具城）7.16 重度",
       安宁: "万辉星城、玉龙湾等历史纪录（常年层）"
     };
-    tbl.innerHTML = ADMIN.map((a) => {
+    tbl.innerHTML = ADMIN.filter((a) => ev[a.key] + hi[a.key] > 0).map((a) => {
       const k = a.key;
       const total = ev[k] + hi[k];
       const share = ev[k] ? `（事件约占命名点 ${Math.round((ev[k] / Math.max(EVENTS.length, 1)) * 100)}%）` : "";
-      const note = notes[k] || "本库暂无 2026 汛期公开点名积水（主城三场通报未列）。";
-      const cls = k === "官渡" ? "hot" : (total === 0 ? "zero" : "");
-      return `<tr class="${cls}"><td>${esc(a.code)}</td><td title="${esc(a.streets)}">${esc(a.full)}</td><td>${esc(a.units)}</td><td>事件 ${ev[k]} · 图层 ${hi[k]} · 合计 ${total}</td><td>${esc(note)}${esc(share)}</td></tr>`;
+      const note = notes[k] || "";
+      return `<tr class="${k === "官渡" ? "hot" : ""}"><td>${esc(a.code)}</td><td title="${esc(a.streets)}">${esc(a.full)}</td><td>${esc(a.units)}</td><td>事件 ${ev[k]} · 图层 ${hi[k]} · 合计 ${total}</td><td>${esc(note)}${esc(share)}</td></tr>`;
     }).join("");
   }
   const lead = document.getElementById("report-district-lead");
   if (lead) {
-    lead.textContent = `调研事件命名点 ${EVENTS.length} 处。分区按昆明市 14 个县级行政区（国标代码 530102–530181），不是经开/高新/度假区。经开点并入官渡，高新点并入五华。0 表示本库暂无点名积水，不是没有这个区。`;
+    lead.textContent = `调研事件 ${EVENTS.length} 处、常年/用户图层 ${HIST.length} 处。分区按昆明市县级行政区；经开并入官渡、高新并入五华。顶栏与条形图均为事件+图层合计。`;
   }
   paintMorphBars();
 }
