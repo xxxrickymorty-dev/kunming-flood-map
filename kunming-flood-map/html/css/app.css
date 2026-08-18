@@ -395,6 +395,7 @@ body {
 .legend.hidden { display: none; }
 .popup h3 { margin: 0 0 6px; font-size: 15px; }
 .popup p { margin: 0 0 6px; font-size: 13px; }
+.popup a { color: var(--today); }
 .leaflet-popup-content-wrapper { border-radius: 8px; }
 .pin-wrap { background: none !important; border: 0 !important; }
 .pin {

@@ -67,6 +67,8 @@ const HIST = window.FLOOD_DATA.hist;
     if (p.ref && byId[p.ref]) {
       p.lat = byId[p.ref].lat;
       p.lng = byId[p.ref].lng;
+      if (!p.source) p.source = byId[p.ref].source;
+      if (!p.evt) p.evt = byId[p.ref].evt;
     }
   });
 }
@@ -137,10 +139,46 @@ function pinIcon(text, cls) {
     popupAnchor: [0, -36]
   });
 }
-function popupHtml(title, lines, latlng) {
+const NEWS = {
+  昆水管网: "https://www.kunming.cn/news/c/2026-07-17/14059480.shtml",
+  昆明信息港: "https://www.kunming.cn/news/c/2026-07-17/14059480.shtml",
+  昆明日报: "https://c.m.163.com/news/a/L3FPSGEN05346936.html",
+  昆明交警: "http://km.bendibao.com/news/2026818/106761.shtm",
+  本地宝: "http://km.bendibao.com/news/2026818/106761.shtm",
+  本地宝早报: "http://km.bendibao.com/news/2026818/106761.shtm",
+  澎湃: "https://www.163.com/dy/article/L4K84UA50514R9P4.html",
+  长水机场: "https://www.163.com/dy/article/L4K84UA50514R9P4.html"
+};
+
+function sourceLinksFor(p) {
+  if (p.evt === "0716") {
+    return [
+      { name: "昆水管网", url: NEWS.昆水管网 },
+      { name: "昆明信息港", url: NEWS.昆明信息港 }
+    ];
+  }
+  if (p.evt === "0802") {
+    return [{ name: "昆明日报", url: NEWS.昆明日报 }];
+  }
+  const s = String(p.source || "");
+  const byUrl = new Map();
+  for (const name of ["本地宝早报", "长水机场", "昆水管网", "昆明信息港", "昆明日报", "昆明交警", "本地宝", "澎湃"]) {
+    if (!s.includes(name)) continue;
+    const url = NEWS[name];
+    if (!url) continue;
+    if (!byUrl.has(url)) byUrl.set(url, []);
+    if (!byUrl.get(url).includes(name)) byUrl.get(url).push(name);
+  }
+  return [...byUrl.entries()].map(([url, names]) => ({ name: names.join(" / "), url }));
+}
+
+function popupHtml(title, lines, latlng, links) {
   const [lat, lng] = latlng;
   const body = lines.filter(Boolean).map((t) => `<p>${esc(t)}</p>`).join("");
-  return `<div class="popup"><h3>${esc(title)}</h3>${body}<p><a href="https://uri.amap.com/marker?position=${lng},${lat}&name=${encodeURIComponent(title)}" target="_blank" rel="noopener">用高德打开这一点</a></p></div>`;
+  const src = (links && links.length)
+    ? `<p>来源：${links.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.name)}</a>`).join(" · ")}</p>`
+    : "";
+  return `<div class="popup"><h3>${esc(title)}</h3>${body}${src}<p><a href="https://uri.amap.com/marker?position=${lng},${lat}&name=${encodeURIComponent(title)}" target="_blank" rel="noopener">用高德打开这一点</a></p></div>`;
 }
 
 const evtLayer = {};
@@ -152,9 +190,8 @@ EVENTS.forEach((p, i) => {
     `${EVT_LABEL[p.evt]} · ${KIND_LABEL[p.kind]} · ${p.district}`,
     `水深：${p.depth}`,
     `持续：${p.duration}`,
-    p.note || "",
-    `来源：${p.source}`
-  ], ll));
+    p.note || ""
+  ], ll, sourceLinksFor(p)));
   const ring = L.circle(ll, {
     radius: EVENT_RING_R,
     color: RING[p.kind],
@@ -186,7 +223,7 @@ HIST.forEach((p) => {
     `${CAT[p.cat]} · ${p.district}`,
     p.depth,
     p.note
-  ], ll));
+  ], ll, sourceLinksFor(p)));
   histLayer[p.n] = L.layerGroup([zone, marker]);
   p._marker = marker;
   p._ll = ll;
