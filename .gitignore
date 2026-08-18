@@ -1,7 +1,6 @@
 # Secrets / keys
 4h8g.pem
 *.pem
-!.ssh/
 
 # OS / editor
 .DS_Store
@@ -10,7 +9,7 @@ Thumbs.db
 .idea/
 .vscode/
 
-# Local only
-deploy/
+# Local only (root legacy folder, not kunming-flood-map/deploy)
+/deploy/
 Snipaste_*.png
 *.log
