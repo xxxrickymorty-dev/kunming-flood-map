@@ -84,7 +84,39 @@ const EVENT_NEAR_PAD = 80;  // 事件点“邻近”余量
 const HIST_NEAR_PAD = 120;  // 常年/用户点“邻近”余量
 const HIST_DEFAULT_R = 200;
 
-const DISTRICTS = ["官渡", "经开", "呈贡", "五华", "盘龙", "西山", "安宁"];
+/* 昆明市县级行政区（国标代码，与用户提供的 2025 区划一致）。经开/高新/度假区不是县级区。 */
+const ADMIN = [
+  { key: "五华", code: "530102", full: "五华区", units: "10 街道", streets: "护国、华山、大观、龙翔、莲华、丰宁、红云、普吉、黑林铺、西翥" },
+  { key: "盘龙", code: "530103", full: "盘龙区", units: "12 街道", streets: "拓东、鼓楼、东华、联盟、金辰、茨坝、龙泉、青云、双龙、松华、滇源、阿子营" },
+  { key: "官渡", code: "530111", full: "官渡区", units: "12 街道", streets: "吴井、太和、关上、金马、官渡、小板桥、大板桥、六甲、矣六、阿拉、小哨、长水" },
+  { key: "西山", code: "530112", full: "西山区", units: "10 街道", streets: "马街、金碧、永昌、前卫、福海、棕树营、西苑、碧鸡、海口、团结" },
+  { key: "东川", code: "530113", full: "东川区", units: "3 街道 · 6 镇", streets: "铜都、碧谷、集义；阿旺、乌龙、红土地、汤丹、拖布卡、因民" },
+  { key: "呈贡", code: "530114", full: "呈贡区", units: "10 街道", streets: "龙城、洛羊、斗南、吴家营、马金铺、七甸、大渔、洛龙、雨花、乌龙" },
+  { key: "晋宁", code: "530115", full: "晋宁区", units: "3 街道 · 3 镇 · 2 乡", streets: "昆阳、宝峰、晋城；二街、上蒜、六街；双河、夕阳" },
+  { key: "富民", code: "530124", full: "富民县", units: "2 街道 · 5 镇", streets: "永定、大营；东村、款庄、赤鹫、散旦、罗免" },
+  { key: "宜良", code: "530125", full: "宜良县", units: "3 街道 · 4 镇 · 2 乡", streets: "匡远、汤池、南羊；狗街、北古城、马街、竹山；耿家营、九乡" },
+  { key: "石林", code: "530126", full: "石林彝族自治县", units: "3 街道 · 3 镇 · 1 乡", streets: "鹿阜、石林、板桥；西街口、长湖、圭山；大可" },
+  { key: "嵩明", code: "530127", full: "嵩明县", units: "2 街道 · 3 镇", streets: "嵩阳、杨桥；杨林、小街、牛栏江" },
+  { key: "禄劝", code: "530128", full: "禄劝彝族苗族自治县", units: "2 街道 · 9 镇 · 6 乡", streets: "屏山、崇德；撒营盘、转龙、茂山、翠华、团街、皎平渡、中屏、乌东德、九龙；云龙、则黑、乌蒙、雪山、汤朗、马鹿塘" },
+  { key: "寻甸", code: "530129", full: "寻甸回族彝族自治县", units: "3 街道 · 9 镇 · 4 乡", streets: "仁德、塘子、金所；羊街、倘甸、柯渡、功山、七星、河口、先锋、鸡街、凤合；甸沙、金源、六哨、联合" },
+  { key: "安宁", code: "530181", full: "安宁市", units: "9 街道", streets: "连然、金方、太平新城、温泉、青龙、草铺、禄脿、八街、县街" }
+];
+const DISTRICTS = ADMIN.map((a) => a.key);
+const ADMIN_BY_KEY = Object.fromEntries(ADMIN.map((a) => [a.key, a]));
+
+{
+  const host = document.getElementById("district-tabs");
+  if (host) {
+    ADMIN.forEach((a) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "district";
+      b.dataset.view = `d-${a.key}`;
+      b.textContent = a.key;
+      host.appendChild(b);
+    });
+  }
+}
 
 const PERIOD = {
   all: {
@@ -236,13 +268,20 @@ let evtF = "all", kindF = "all", histF = "all", qEvt = "", qHist = "", currentVi
 function districtKey(d) {
   const s = String(d || "");
   if (/五华|高新/.test(s)) return "五华";
-  if (/经开/.test(s)) return "经开";
-  if (/呈贡/.test(s)) return "呈贡";
   if (/盘龙/.test(s)) return "盘龙";
-  if (/西山/.test(s)) return "西山";
+  if (/西山|度假/.test(s)) return "西山";
+  if (/东川/.test(s)) return "东川";
+  if (/呈贡/.test(s)) return "呈贡";
+  if (/晋宁/.test(s)) return "晋宁";
+  if (/富民/.test(s)) return "富民";
+  if (/宜良/.test(s)) return "宜良";
+  if (/石林/.test(s)) return "石林";
+  if (/嵩明/.test(s)) return "嵩明";
+  if (/禄劝/.test(s)) return "禄劝";
+  if (/寻甸/.test(s)) return "寻甸";
   if (/安宁/.test(s)) return "安宁";
-  /* 长水机场及出城走廊行政上属官渡；旧标签「机场向」并入 */
-  if (/官渡|机场/.test(s)) return "官渡";
+  /* 经开、长水机场行政上属官渡；旧标签「机场向」并入 */
+  if (/官渡|经开|机场/.test(s)) return "官渡";
   return s;
 }
 
@@ -310,13 +349,19 @@ function updatePeriodCopy() {
     const hiN = HIST.filter((p) => districtKey(p.district) === districtF).length;
     document.getElementById("evt-title").textContent = `分区分图 · ${districtF}`;
     document.getElementById("evt-sub").textContent = `仅显示「${districtF}」相关调研事件与常年/用户点位。`;
-    let boundNote = "浅蓝为该区行政边界示意（与高德底图同 GCJ 坐标）。";
-    if (districtF === "经开") {
-      boundNote = "浅蓝虚线为经开区功能范围示意，不是国家标准县级界；土地行政上多属官渡。";
-    } else if (districtF === "官渡") {
-      boundNote = "2025 年辖吴井、关上、金马、太和、矣六等 12 街道。列表按街道/交警通报归类，不是用浅蓝多边形裁点。"
-        + "地图编号 26 是用户补点万象城（吴井街道环城南路1号），不是 2024 防指一览表「官渡 26 处」路段清单里的某一条。"
-        + "经开是叠在本区上的功能区。浅蓝为行政示意（北界已按人民东路以南的金马/吴井修正）。";
+    const admin = ADMIN_BY_KEY[districtF];
+    const unitLine = admin ? `${admin.code} ${admin.full} · ${admin.units}` : "";
+    const hasBound = !!(districtGeo && districtGeo.features.some((f) => f.properties && f.properties.name === districtF && f.properties.kind !== "zone"));
+    let boundNote = hasBound
+      ? "浅蓝为该区行政边界示意（与高德底图同 GCJ 坐标）。"
+      : "本库暂无该区边界图层。";
+    if (districtF === "官渡") {
+      boundNote = `${unitLine}（${admin.streets}）。早报写「经开」的涵洞点已按行政区并入本区。`
+        + "地图编号 26 是用户补点万象城（吴井环城南路1号）。浅蓝为行政示意。";
+    } else if (admin && evN + hiN === 0) {
+      boundNote = `${unitLine}。本库暂无 2026 汛期公开点名积水（主城三场通报未列本区），不是没有这个区。`;
+    } else if (admin) {
+      boundNote = `${unitLine}。${boundNote}`;
     }
     document.getElementById("period-banner").innerHTML =
       `<strong>${esc(districtF)}</strong>：调研事件 <strong>${evN}</strong> 处 · 常年/用户图层 <strong>${hiN}</strong> 处。${boundNote}`;
@@ -466,46 +511,40 @@ function refreshDistrictStats() {
   });
   const bar = document.getElementById("district-bars");
   if (bar) {
-    const pairs = DISTRICTS.map((k) => [k, ev[k]]).filter(([, n]) => n > 0);
-    const max = Math.max(...pairs.map((p) => p[1]), 1);
+    const max = Math.max(...DISTRICTS.map((k) => ev[k]), 1);
     bar.innerHTML = "";
-    pairs.forEach(([name, n]) => {
+    DISTRICTS.forEach((name) => {
+      const n = ev[name];
+      const a = ADMIN_BY_KEY[name];
       const row = document.createElement("div");
-      row.className = "bar-row";
-      row.innerHTML = `<span>${esc(name)}</span><div class="bar-track"><div class="bar-fill"></div></div><span>${n}</span>`;
+      row.className = "bar-row" + (n === 0 ? " zero" : "");
+      row.innerHTML = `<span title="${esc(a.code + " " + a.full)}">${esc(name)}</span><div class="bar-track"><div class="bar-fill"></div></div><span>${n}</span>`;
       row.querySelector(".bar-fill").style.setProperty("--w", `${(n / max) * 100}%`);
       bar.appendChild(row);
     });
   }
   const tbl = document.getElementById("district-table-body");
   if (tbl) {
-    const roles = {
-      官渡: "主战场（含机场走廊）",
-      经开: "东延涵洞带",
-      呈贡: "新区过程雨",
-      五华: "西翼+北城",
-      盘龙: "轻触+河道老区",
-      西山: "永昌低洼+前卫广福",
-      安宁: "城郊历史点"
-    };
     const notes = {
-      官渡: "三场暴雨均有；东二环、国贸、牛街庄、广福南片集中；金马（菊华/大树营）、吴井（万象城）属本区；地图 26 号是万象城用户补点，不是 2024 防指「官渡 26 处」清单；长水机场行政属官渡",
-      经开: "贵昆路/涵洞早报点；与官渡东廊衔接；非县级行政区，分图边界为功能区示意",
+      官渡: "三场暴雨均有；东二环、国贸、牛街庄、广福南片集中。金马（菊华/大树营）、吴井（万象城）、长水机场属本区。早报「经开」涵洞 4 处已并入。",
       呈贡: "8.2–3 临时管制为主；水深公开不足",
-      五华: "海源–滇缅正式通报 + 用户补点（金泰/戛纳/海源北/龙泉路）",
+      五华: "海源–滇缅正式通报 + 用户补点（金泰/戛纳/海源北/龙泉路；高新功能区并入本区）",
       盘龙: "道路名单少；金汁河/盘龙江沿岸老社区在常年层",
       西山: "华昌×采莲、永昌/云纺、豆腐营低洼带；前卫西路×广福路（十一家具城）7.16 重度",
       安宁: "万辉星城、玉龙湾等历史纪录（常年层）"
     };
-    tbl.innerHTML = DISTRICTS.filter((k) => ev[k] + hi[k] > 0).map((k) => {
+    tbl.innerHTML = ADMIN.map((a) => {
+      const k = a.key;
       const total = ev[k] + hi[k];
-      const share = Math.round((ev[k] / Math.max(EVENTS.length, 1)) * 100);
-      return `<tr class="${k === "官渡" ? "hot" : ""}"><td>${esc(k)}</td><td>事件 ${ev[k]} · 图层 ${hi[k]} · 合计 ${total}</td><td>${esc(roles[k] || "")}</td><td>${esc(notes[k] || "")}（事件约占命名点 ${share}%）</td></tr>`;
+      const share = ev[k] ? `（事件约占命名点 ${Math.round((ev[k] / Math.max(EVENTS.length, 1)) * 100)}%）` : "";
+      const note = notes[k] || "本库暂无 2026 汛期公开点名积水（主城三场通报未列）。";
+      const cls = k === "官渡" ? "hot" : (total === 0 ? "zero" : "");
+      return `<tr class="${cls}"><td>${esc(a.code)}</td><td title="${esc(a.streets)}">${esc(a.full)}</td><td>${esc(a.units)}</td><td>事件 ${ev[k]} · 图层 ${hi[k]} · 合计 ${total}</td><td>${esc(note)}${esc(share)}</td></tr>`;
     }).join("");
   }
   const lead = document.getElementById("report-district-lead");
   if (lead) {
-    lead.textContent = `调研事件命名点 ${EVENTS.length} 处（按现库统计）。分区按 2025 年县级行政区+街道（官渡含吴井/关上/金马/太和/矣六等；经开为功能区）。「机场向」已并入官渡。浅蓝边界为示意，列表不按多边形裁切。`;
+    lead.textContent = `调研事件命名点 ${EVENTS.length} 处。分区按昆明市 14 个县级行政区（国标代码 530102–530181），不是经开/高新/度假区。经开点并入官渡，高新点并入五华。0 表示本库暂无点名积水，不是没有这个区。`;
   }
   paintMorphBars();
 }
@@ -526,6 +565,7 @@ function viewFromHash() {
 }
 
 function setView(view, { fit = true, push = true } = {}) {
+  if (view === "d-经开") view = "d-官渡";
   if (!VALID_VIEWS.has(view)) view = "all";
   currentView = view;
   const isReport = view === "report";
@@ -589,8 +629,9 @@ window.addEventListener("resize", debounce(() => {
   updateSheetLabel();
 }, 150));
 
-document.querySelectorAll(".topnav [data-view]").forEach((btn) => {
-  btn.onclick = () => setView(btn.dataset.view);
+document.querySelector(".topnav").addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-view]");
+  if (btn && e.currentTarget.contains(btn)) setView(btn.dataset.view);
 });
 document.querySelectorAll(".jump-map").forEach((btn) => {
   btn.onclick = () => setView(btn.dataset.jump);

@@ -21,13 +21,7 @@
       <button type="button" class="hist" data-view="hist">常年易淹</button>
       <button type="button" class="report" data-view="report">区域分析</button>
       <span class="nav-sep" aria-hidden="true"></span>
-      <button type="button" class="district" data-view="d-官渡">官渡</button>
-      <button type="button" class="district" data-view="d-经开">经开</button>
-      <button type="button" class="district" data-view="d-呈贡">呈贡</button>
-      <button type="button" class="district" data-view="d-五华">五华</button>
-      <button type="button" class="district" data-view="d-盘龙">盘龙</button>
-      <button type="button" class="district" data-view="d-西山">西山</button>
-      <button type="button" class="district" data-view="d-安宁">安宁</button>
+      <span id="district-tabs" class="district-tabs"></span>
     </div>
   </nav>
 
@@ -81,7 +75,7 @@
       <div class="report-inner">
         <h1>昆明积水 · 区域分析</h1>
         <p class="lead" id="report-district-lead">
-          基于 2026-07-16 / 08-02~03 / 08-18 三场公开积水记录与常年易淹、用户补点图层交叉。结论服务避险绕行，不是排水工程评估。
+          分区按昆明市 14 个县级行政区（国标代码）。经开/高新/度假区不是县级区。结论服务避险绕行，不是排水工程评估。
         </p>
         <div class="chips">
           <span class="chip hot">官渡事件点最多（含机场走廊）</span>
@@ -102,7 +96,7 @@
         </div>
 
         <h2>区县分布</h2>
-        <p class="muted" id="report-district-caption">条形图 = 调研事件命名点（按现库实时统计）；不含 7.16 未点名轻度 13 处。</p>
+        <p class="muted" id="report-district-caption">昆明市 14 个县级行政区（国标代码）。条形图 = 调研事件命名点；0 表示本库暂无点名，不是没有这个区。不含 7.16 未点名轻度 13 处。经开/高新/度假区不是县级区。</p>
         <div class="bars" id="district-bars"></div>
 
         <h3>形态类型粗分</h3>
@@ -111,7 +105,7 @@
 
         <table class="data">
           <thead>
-            <tr><th>区县</th><th>数量</th><th>角色</th><th>区域特征</th></tr>
+            <tr><th>代码</th><th>区县</th><th>乡镇街道</th><th>数量</th><th>说明</th></tr>
           </thead>
           <tbody id="district-table-body"></tbody>
         </table>
@@ -136,7 +130,7 @@
         <div class="corridor">
           <div class="head"><h3>3. 贵昆路—牛街庄—经开涵洞带</h3><span class="tag">高</span></div>
           <p class="scope">牛街庄隧道 · 金马村涵洞 · 河岸村 · 经东路</p>
-          <p class="meta-line">官渡 / 经开 · 8.18 · 30–40 cm（牛街庄历史可更深）</p>
+          <p class="meta-line">官渡（含经开功能区） · 8.18 · 30–40 cm（牛街庄历史可更深）</p>
           <p>铁路/道路下穿集群；牛街庄断交可见≥8h，东向出城与机场衔接受阻。</p>
           <button type="button" class="jump-map" data-jump="0818">在地图看涵洞带 →</button>
         </div>
@@ -205,7 +199,7 @@
           <li>雨带偏西/偏南时提高海源—滇缅、呈贡下穿权重。</li>
         </ul>
         <p class="muted">
-          数据边界：坐标为路口近似；部分呈贡/经开清退时刻缺失；轻度 13 处未点名；历史最深（牛街庄 2m+、永昌 1.1m）来自历年报道。
+          数据边界：坐标为路口近似；部分呈贡清退时刻缺失；轻度 13 处未点名；历史最深（牛街庄 2m+、永昌 1.1m）来自历年报道。区域分析按 14 个县级行政区；经开不是县级区。
         </p>
         <p class="back-row">
           <button type="button" class="jump-map" data-jump="all">回到全部淹水地图 →</button>
