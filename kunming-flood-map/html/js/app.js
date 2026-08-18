@@ -310,9 +310,14 @@ function updatePeriodCopy() {
     const hiN = HIST.filter((p) => districtKey(p.district) === districtF).length;
     document.getElementById("evt-title").textContent = `分区分图 · ${districtF}`;
     document.getElementById("evt-sub").textContent = `仅显示「${districtF}」相关调研事件与常年/用户点位。`;
-    const boundNote = districtF === "经开"
-      ? "浅蓝虚线为经开功能区示意（非国家标准县级界）。"
-      : "浅蓝为该区行政边界示意（与高德底图同 GCJ 坐标）。";
+    let boundNote = "浅蓝为该区行政边界示意（与高德底图同 GCJ 坐标）。";
+    if (districtF === "经开") {
+      boundNote = "浅蓝虚线为经开区功能范围示意，不是国家标准县级界；土地行政上多属官渡。";
+    } else if (districtF === "官渡") {
+      boundNote = "2024 防指一览表官渡 26 处是路段清单，不是地图编号；地图编号 26 是用户补点万象城（吴井街道环城南路1号），矣六街道办事处是另列的常年点。"
+        + "2025 年辖吴井、关上、金马、太和、矣六等 12 街道。列表按街道/交警通报归类，不是用浅蓝多边形裁点。"
+        + "经开是叠在本区上的功能区。浅蓝为行政示意（北界已按人民东路以南的金马/吴井修正）。";
+    }
     document.getElementById("period-banner").innerHTML =
       `<strong>${esc(districtF)}</strong>：调研事件 <strong>${evN}</strong> 处 · 常年/用户图层 <strong>${hiN}</strong> 处。${boundNote}`;
     return;
@@ -484,8 +489,8 @@ function refreshDistrictStats() {
       安宁: "城郊历史点"
     };
     const notes = {
-      官渡: "三场暴雨均有；东二环、国贸、牛街庄、广福南片集中；机场向金瓦路等管制点已并入（长水机场行政属官渡）",
-      经开: "贵昆路/涵洞早报点；与官渡东廊衔接；分图边界为功能区示意",
+      官渡: "三场暴雨均有；东二环、国贸、牛街庄、广福南片集中；金马（菊华/大树营）、吴井（万象城）属本区；2024 防指一览表 26 处为路段清单（地图 26 号≠矣六办事处）；长水机场行政属官渡",
+      经开: "贵昆路/涵洞早报点；与官渡东廊衔接；非县级行政区，分图边界为功能区示意",
       呈贡: "8.2–3 临时管制为主；水深公开不足",
       五华: "海源–滇缅正式通报 + 用户补点（金泰/戛纳/海源北/龙泉路）",
       盘龙: "道路名单少；金汁河/盘龙江沿岸老社区在常年层",
@@ -500,7 +505,7 @@ function refreshDistrictStats() {
   }
   const lead = document.getElementById("report-district-lead");
   if (lead) {
-    lead.textContent = `调研事件命名点 ${EVENTS.length} 处（按现库统计）。「机场向」已并入官渡。分区分图显示浅蓝行政边界；条形图仅计事件点。`;
+    lead.textContent = `调研事件命名点 ${EVENTS.length} 处（按现库统计）。分区按 2025 年县级行政区+街道（官渡含吴井/关上/金马/太和/矣六等；经开为功能区）。「机场向」已并入官渡。浅蓝边界为示意，列表不按多边形裁切。`;
   }
   paintMorphBars();
 }
