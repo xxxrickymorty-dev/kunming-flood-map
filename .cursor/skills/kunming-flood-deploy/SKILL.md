@@ -20,7 +20,7 @@ description: >-
 | 唯一事实源 | `kunming-flood-map/html/`（index.html + css/app.css + js/data.js + js/app.js + vendor/） |
 | 数据改动 | 只改 `html/js/data.js`（hist 里 `ref` 指向事件点，坐标不重复维护） |
 | 根目录旧文件 | `昆明积水地图-0818.html` 已退化为跳转页，**不再是源** |
-| 线上目录 | `/home/ubuntu/kunming-flood-map` |
+| 线上目录 | `/workspace/kunming-flood-map`（`/home/ubuntu/kunming-flood-map` 是历史误建残留，勿用） |
 | 线上地址 | http://43.180.135.43:8088/ |
 | SSH | `ubuntu@43.180.135.43`，密钥 `~/.ssh/yanleme-4h8g.pem` |
 | 容器 | `kunming-flood-map-nginx-1`，宿主机 **8088→80** |
@@ -63,9 +63,9 @@ powershell -ExecutionPolicy Bypass -File ".\kunming-flood-map\scripts\publish.ps
 
 ```powershell
 $key = "$env:USERPROFILE\.ssh\yanleme-4h8g.pem"
-tar -czf "$env:TEMP\kfm.tar.gz" -C kunming-flood-map html deploy
+tar -czf "$env:TEMP\kfm.tar.gz" -C kunming-flood-map docker-compose.yml html deploy
 scp -i $key "$env:TEMP\kfm.tar.gz" ubuntu@43.180.135.43:/tmp/kfm.tar.gz
-ssh -i $key ubuntu@43.180.135.43 "mkdir -p /home/ubuntu/kunming-flood-map && tar -xzf /tmp/kfm.tar.gz -C /home/ubuntu/kunming-flood-map && cd /home/ubuntu/kunming-flood-map && sudo docker compose up -d"
+ssh -i $key ubuntu@43.180.135.43 "tar -xzf /tmp/kfm.tar.gz -C /workspace/kunming-flood-map && cd /workspace/kunming-flood-map && sudo docker compose up -d && sudo docker exec kunming-flood-map-nginx-1 nginx -s reload"
 ```
 
 ## Content edit checklist (before publish)
