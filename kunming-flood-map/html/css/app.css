@@ -534,26 +534,43 @@ table.data tr.zero td { color: #6b6258; background: #faf7f0; }
 }
 .report .chip.hot { background: #b42318; color: #fff; border-color: #b42318; }
 .report .chip.blue { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
-.stats {
+.district-board {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin-bottom: 22px;
+  margin: 0 0 8px;
 }
-.stat {
+.district-board-hint { margin: 0 0 16px; }
+.district-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
   background: #fffdf8;
   border: 1px solid var(--line);
   border-radius: 10px;
-  padding: 14px 12px;
+  padding: 14px 14px 12px;
+  cursor: pointer;
+  font-family: inherit;
+  color: inherit;
 }
-.stat b {
-  display: block;
-  font-size: 22px;
+.district-card:hover { border-color: #0f766e; }
+.district-card.hot {
+  border-color: #b42318;
+  background: #fff5f4;
+}
+.district-card .name { font-size: 15px; font-weight: 750; }
+.district-card .code { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.district-card .num {
+  font-size: 28px;
   font-weight: 800;
   color: var(--today);
-  margin-bottom: 4px;
+  line-height: 1.1;
+  margin: 8px 0 4px;
 }
-.stat span { font-size: 12px; color: var(--muted); line-height: 1.4; }
+.district-card.hot .num { color: #b42318; }
+.district-card .split { font-size: 12px; color: var(--muted); }
+.district-card .go { font-size: 12px; color: #0f766e; margin-top: 8px; }
 .callout {
   background: #fff7ed;
   border: 1px solid #f0d9b8;
@@ -844,7 +861,7 @@ table.data tr.hot td { background: #fff5f4; }
 
   .report-inner { padding: 18px 14px 48px; }
   .report h1 { font-size: 22px; }
-  .stats { grid-template-columns: 1fr 1fr; }
+  .district-board { grid-template-columns: 1fr 1fr; }
   .two-col { grid-template-columns: 1fr; }
   table.data { font-size: 12px; display: block; overflow-x: auto; }
 }

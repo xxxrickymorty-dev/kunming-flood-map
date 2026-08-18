@@ -20,8 +20,6 @@
       <button type="button" data-view="0802">8.2–3</button>
       <button type="button" class="hist" data-view="hist">常年易淹</button>
       <button type="button" class="report" data-view="report">区域分析</button>
-      <span class="nav-sep" aria-hidden="true"></span>
-      <span id="district-tabs" class="district-tabs"></span>
     </div>
   </nav>
 
@@ -75,19 +73,14 @@
       <div class="report-inner">
         <h1>昆明积水 · 区域分析</h1>
         <p class="lead" id="report-district-lead">
-          分区按昆明市县级行政区；只展示本库有积水点的区县。经开/高新不是县级区。结论服务避险绕行，不是排水工程评估。
+          分区按昆明市县级行政区。点击下方卡片打开该区分图。经开/高新不是县级区。结论服务避险绕行，不是排水工程评估。
         </p>
+        <div class="district-board" id="district-board"></div>
+        <p class="muted district-board-hint">数字 = 调研事件 + 常年/用户图层。只列出本库有点的区。</p>
         <div class="chips">
-          <span class="chip hot">官渡事件点最多（含机场走廊）</span>
-          <span class="chip">导航可按区打开分图</span>
-          <span class="chip blue">含用户补点：西翼 / 永昌 / 龙泉路 / 万象城</span>
-        </div>
-
-        <div class="stats">
-          <div class="stat"><b>官渡</b><span>事件密度第一区</span></div>
-          <div class="stat"><b>4</b><span>核心热点走廊</span></div>
-          <div class="stat"><b>≥8h</b><span>最长可见断交（牛街庄/国贸/长润）</span></div>
-          <div class="stat"><b>分区</b><span>顶栏末尾按区查看</span></div>
+          <span class="chip hot">官渡事件密度第一</span>
+          <span class="chip">4 条核心热点走廊</span>
+          <span class="chip blue">最长可见断交 ≥8h（牛街庄/国贸/长润）</span>
         </div>
 
         <div class="callout">
@@ -95,20 +88,18 @@
           公开积水仍高度集中在官渡东/南走廊；西翼海源–滇缅与北城龙泉路、永昌/云纺、环城南路万象城一带依赖用户补点与历史报道交叉。呈贡多为管制型。
         </div>
 
-        <h2>区县分布</h2>
-        <p class="muted" id="report-district-caption">只列出本库有点的区县。条形图数字与顶栏一致：调研事件 + 常年/用户图层。不含 7.16 未点名轻度 13 处。经开/高新不是县级区，已并入官渡/五华。</p>
-        <div class="bars" id="district-bars"></div>
-
-        <h3>形态类型粗分</h3>
-        <div class="bars" id="morph-bars"></div>
-        <p class="muted">按事件点现库实算。下穿/立交与主干道低洼合计占绝大多数；交通影响主要来自「桥下连续带」。</p>
-
+        <h2>区县明细</h2>
+        <p class="muted" id="report-district-caption">与上方卡片同一口径。不含 7.16 未点名轻度 13 处。经开/高新已并入官渡/五华。</p>
         <table class="data">
           <thead>
             <tr><th>代码</th><th>区县</th><th>乡镇街道</th><th>数量</th><th>说明</th></tr>
           </thead>
           <tbody id="district-table-body"></tbody>
         </table>
+
+        <h2>形态类型粗分</h2>
+        <div class="bars" id="morph-bars"></div>
+        <p class="muted">按事件点现库实算。下穿/立交与主干道低洼合计占绝大多数；交通影响主要来自「桥下连续带」。</p>
 
         <h2>六大热点走廊</h2>
         <p class="muted">按「同场连片 + 跨场复发 + 断交时长」排序，不是单纯点数。</p>

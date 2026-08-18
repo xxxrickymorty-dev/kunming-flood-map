@@ -104,20 +104,6 @@ const ADMIN = [
 const DISTRICTS = ADMIN.map((a) => a.key);
 const ADMIN_BY_KEY = Object.fromEntries(ADMIN.map((a) => [a.key, a]));
 
-{
-  const host = document.getElementById("district-tabs");
-  if (host) {
-    ADMIN.forEach((a) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "district";
-      b.dataset.view = `d-${a.key}`;
-      b.textContent = a.key;
-      host.appendChild(b);
-    });
-  }
-}
-
 const PERIOD = {
   all: {
     title: "调研事件点 · 全部场次",
@@ -364,7 +350,8 @@ function updatePeriodCopy() {
       boundNote = `${unitLine}。${boundNote}`;
     }
     document.getElementById("period-banner").innerHTML =
-      `<strong>${esc(districtF)}</strong>：调研事件 <strong>${evN}</strong> 处 · 常年/用户图层 <strong>${hiN}</strong> 处。${boundNote}`;
+      `<strong>${esc(districtF)}</strong>：调研事件 <strong>${evN}</strong> 处 · 常年/用户图层 <strong>${hiN}</strong> 处。${boundNote}`
+      + ` <button type="button" class="jump-map" data-jump="report">← 区域分析</button>`;
     return;
   }
   const meta = PERIOD[evtF] || PERIOD.all;
@@ -505,27 +492,21 @@ function refreshDistrictStats() {
   DISTRICTS.forEach((k) => { ev[k] = 0; hi[k] = 0; });
   EVENTS.forEach((p) => { const k = districtKey(p.district); if (ev[k] != null) ev[k]++; });
   HIST.forEach((p) => { const k = districtKey(p.district); if (hi[k] != null) hi[k]++; });
-  DISTRICTS.forEach((k) => {
-    const btn = document.querySelector(`.topnav [data-view="d-${k}"]`);
-    if (!btn) return;
-    const total = ev[k] + hi[k];
-    btn.hidden = total === 0;
-    if (total > 0) btn.textContent = `${k} ${total}`;
-  });
-  const bar = document.getElementById("district-bars");
-  if (bar) {
-    const shown = DISTRICTS.filter((k) => ev[k] + hi[k] > 0);
-    const max = Math.max(...shown.map((k) => ev[k] + hi[k]), 1);
-    bar.innerHTML = "";
-    shown.forEach((name) => {
-      const n = ev[name] + hi[name];
-      const a = ADMIN_BY_KEY[name];
-      const row = document.createElement("div");
-      row.className = "bar-row";
-      row.innerHTML = `<span title="${esc(a.code + " " + a.full + " · 事件 " + ev[name] + " · 图层 " + hi[name])}">${esc(name)}</span><div class="bar-track"><div class="bar-fill"></div></div><span>${n}</span>`;
-      row.querySelector(".bar-fill").style.setProperty("--w", `${(n / max) * 100}%`);
-      bar.appendChild(row);
-    });
+  const shown = DISTRICTS.filter((k) => ev[k] + hi[k] > 0);
+  const board = document.getElementById("district-board");
+  if (board) {
+    board.innerHTML = shown.map((k) => {
+      const a = ADMIN_BY_KEY[k];
+      const total = ev[k] + hi[k];
+      const hot = k === "官渡" ? " hot" : "";
+      return `<button type="button" class="district-card${hot}" data-jump="d-${esc(k)}">`
+        + `<span class="name">${esc(a.full)}</span>`
+        + `<span class="code">${esc(a.code)} · ${esc(a.units)}</span>`
+        + `<span class="num">${total}</span>`
+        + `<span class="split">事件 ${ev[k]} · 图层 ${hi[k]}</span>`
+        + `<span class="go">打开分图 →</span>`
+        + `</button>`;
+    }).join("");
   }
   const tbl = document.getElementById("district-table-body");
   if (tbl) {
@@ -542,20 +523,21 @@ function refreshDistrictStats() {
       const total = ev[k] + hi[k];
       const share = ev[k] ? `（事件约占命名点 ${Math.round((ev[k] / Math.max(EVENTS.length, 1)) * 100)}%）` : "";
       const note = notes[k] || "";
-      return `<tr class="${k === "官渡" ? "hot" : ""}"><td>${esc(a.code)}</td><td title="${esc(a.streets)}">${esc(a.full)}</td><td>${esc(a.units)}</td><td>事件 ${ev[k]} · 图层 ${hi[k]} · 合计 ${total}</td><td>${esc(note)}${esc(share)}</td></tr>`;
+      return `<tr class="${k === "官渡" ? "hot" : ""}"><td>${esc(a.code)}</td><td title="${esc(a.streets)}"><button type="button" class="jump-map" data-jump="d-${esc(k)}">${esc(a.full)}</button></td><td>${esc(a.units)}</td><td>事件 ${ev[k]} · 图层 ${hi[k]} · 合计 ${total}</td><td>${esc(note)}${esc(share)}</td></tr>`;
     }).join("");
   }
   const lead = document.getElementById("report-district-lead");
   if (lead) {
-    lead.textContent = `调研事件 ${EVENTS.length} 处、常年/用户图层 ${HIST.length} 处。分区按昆明市县级行政区；经开并入官渡、高新并入五华。顶栏与条形图均为事件+图层合计。`;
+    lead.textContent = `调研事件 ${EVENTS.length} 处、常年/用户图层 ${HIST.length} 处。分区按昆明市县级行政区；经开并入官渡、高新并入五华。卡片数字为事件+图层合计。`;
   }
   paintMorphBars();
 }
 
 /* —— 视图切换 + hash 路由（可分享 #v=0818 / #v=d-西山 等） —— */
-const VALID_VIEWS = new Set(
-  [...document.querySelectorAll(".topnav [data-view]")].map((b) => b.dataset.view)
-);
+const VALID_VIEWS = new Set([
+  ...[...document.querySelectorAll(".topnav [data-view]")].map((b) => b.dataset.view),
+  ...DISTRICTS.map((k) => `d-${k}`)
+]);
 function viewFromHash() {
   const m = location.hash.match(/^#v=(.+)$/);
   if (!m) return null;
@@ -583,7 +565,7 @@ function setView(view, { fit = true, push = true } = {}) {
   document.getElementById("legend").classList.toggle("hidden", isReport);
 
   document.querySelectorAll(".topnav [data-view]").forEach((b) => {
-    b.classList.toggle("on", b.dataset.view === view);
+    b.classList.toggle("on", b.dataset.view === view || (districtMode && b.dataset.view === "report"));
   });
 
   if (push) {
@@ -636,8 +618,9 @@ document.querySelector(".topnav").addEventListener("click", (e) => {
   const btn = e.target.closest("[data-view]");
   if (btn && e.currentTarget.contains(btn)) setView(btn.dataset.view);
 });
-document.querySelectorAll(".jump-map").forEach((btn) => {
-  btn.onclick = () => setView(btn.dataset.jump);
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-jump]");
+  if (btn) setView(btn.dataset.jump);
 });
 document.querySelectorAll("[data-kind]").forEach((btn) => {
   btn.onclick = () => {
