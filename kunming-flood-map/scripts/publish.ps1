@@ -1,49 +1,55 @@
-﻿#Requires -Version 5.1
-param(
-  [string]$HostIp = "43.180.135.43",
-  [string]$User = "ubuntu",
-  [string]$KeyPath = "",
-  [string]$RemoteDir = "/workspace/kunming-flood-map",
-  [switch]$SkipSyncSource
-)
+﻿# 发布昆明积水地图到 43.180.135.43:8088
+# 源 = kunming-flood-map/html/（index.html + css/js/data + vendor + districts.geojson）
+# 根目录 昆明积水地图-0818.html 只是跳转页，不再参与发布。
 $ErrorActionPreference = "Stop"
-$Local = $PSScriptRoot
-if ((Split-Path -Leaf $Local) -eq "scripts") { $Local = Split-Path -Parent $Local }
-$Root = Split-Path -Parent $Local
-function Resolve-Pem([string]$Explicit) {
-  if ($Explicit -and (Test-Path -LiteralPath $Explicit)) { return $Explicit }
-  foreach ($c in @((Join-Path $Root "4h8g.pem"), "$env:USERPROFILE\.ssh\yanleme-4h8g.pem")) {
-    if (Test-Path -LiteralPath $c) { return $c }
-  }
-  throw "PEM not found"
+
+$root = Split-Path -Parent $PSScriptRoot
+$htmlDir = Join-Path $root "html"
+$deploy = Join-Path $root "deploy"
+$key = "$env:USERPROFILE\.ssh\yanleme-4h8g.pem"
+$target = "ubuntu@43.180.135.43"
+$remoteDir = "/home/ubuntu/kunming-flood-map"
+$port = 8088
+
+if (-not (Test-Path (Join-Path $htmlDir "index.html"))) { throw "缺少 $htmlDir\index.html" }
+if (-not (Test-Path (Join-Path $htmlDir "js\app.js"))) { throw "缺少 $htmlDir\js\app.js" }
+if (-not (Test-Path (Join-Path $htmlDir "js\data.js"))) { throw "缺少 $htmlDir\js\data.js" }
+if (-not (Test-Path (Join-Path $htmlDir "css\app.css"))) { throw "缺少 $htmlDir\css\app.css" }
+if (-not (Test-Path $key)) { throw "缺少密钥 $key" }
+
+$ts = Get-Date -Format "yyyyMMdd-HHmmss"
+$tar = Join-Path $env:TEMP "kunming-flood-map-$ts.tar.gz"
+
+Push-Location $root
+try {
+    tar -czf $tar html deploy
+    if ($LASTEXITCODE -ne 0) { throw "tar 打包失败" }
+} finally {
+    Pop-Location
 }
-function Ensure-PemReadable([string]$Path) {
-  $acct = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
-  $dst = Join-Path $env:USERPROFILE ".ssh\yanleme-4h8g.pem"
-  New-Item -ItemType Directory -Force -Path (Join-Path $env:USERPROFILE ".ssh") | Out-Null
-  Copy-Item -LiteralPath $Path -Destination $dst -Force
-  icacls $dst /inheritance:r | Out-Null
-  icacls $dst /grant:r ($acct + ":R") | Out-Null
-  return $dst
+
+scp -i $key -o StrictHostKeyChecking=accept-new $tar "${target}:/tmp/kunming-flood-map.tar.gz"
+if ($LASTEXITCODE -ne 0) { throw "scp 上传失败" }
+
+$remote = @"
+set -e
+mkdir -p $remoteDir
+tar -xzf /tmp/kunming-flood-map.tar.gz -C $remoteDir
+cd $remoteDir
+sudo docker compose up -d
+sleep 2
+curl -s -o /dev/null -w "local http status %{http_code}\n" http://127.0.0.1:$port/
+rm -f /tmp/kunming-flood-map.tar.gz
+"@
+
+$remote | ssh -i $key $target "bash -s"
+if ($LASTEXITCODE -ne 0) { throw "远端部署失败" }
+
+Remove-Item $tar -ErrorAction SilentlyContinue
+
+try {
+    $r = Invoke-WebRequest -Uri "http://43.180.135.43:$port/" -UseBasicParsing -TimeoutSec 15
+    Write-Host "done http://43.180.135.43:$port/ status=$($r.StatusCode)"
+} catch {
+    Write-Host "deployed but local check failed: $($_.Exception.Message)"
 }
-function Sync-SourceHtml {
-  $src = Join-Path $Root ([char]0x6606+[char]0x660E+[char]0x79EF+[char]0x6C34+[char]0x5730+[char]0x56FE+"-0818.html")
-  # fallback glob
-  $src = Get-ChildItem -LiteralPath $Root -Filter "*-0818.html" | Select-Object -First 1 -ExpandProperty FullName
-  if (-not $src) { Write-Host "skip source"; return }
-  $dstHtml = Join-Path $Local "html\index.html"
-  $raw = [System.IO.File]::ReadAllText($src, [System.Text.UTF8Encoding]::new($false))
-  $out = $raw.Replace("https://unpkg.com/leaflet@1.9.4/dist/leaflet.css", "/vendor/leaflet.css").Replace("https://unpkg.com/leaflet@1.9.4/dist/leaflet.js", "/vendor/leaflet.js")
-  [System.IO.File]::WriteAllText($dstHtml, $out, [System.Text.UTF8Encoding]::new($false))
-  Write-Host "synced HTML"
-}
-if (-not $SkipSyncSource) { Sync-SourceHtml }
-$KeyPath = Ensure-PemReadable (Resolve-Pem $KeyPath)
-$target = "${User}@${HostIp}"
-ssh -i $KeyPath -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new $target "sudo mkdir -p $RemoteDir/html $RemoteDir/deploy; sudo chown -R ${User}:${User} $RemoteDir"
-scp -i $KeyPath -o IdentitiesOnly=yes (Join-Path $Local "docker-compose.yml") "${target}:${RemoteDir}/docker-compose.yml"
-scp -i $KeyPath -o IdentitiesOnly=yes (Join-Path $Local "deploy\nginx.conf") "${target}:${RemoteDir}/deploy/nginx.conf"
-scp -i $KeyPath -o IdentitiesOnly=yes -r (Join-Path $Local "html\*") "${target}:${RemoteDir}/html/"
-ssh -i $KeyPath -o IdentitiesOnly=yes $target "cd $RemoteDir; sudo docker compose up -d; sudo chmod -R a+rX html; sudo docker exec kunming-flood-map-nginx-1 nginx -s reload"
-$code = ssh -i $KeyPath -o IdentitiesOnly=yes $target "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8088/"
-Write-Host "done http://${HostIp}:8088/ status=$code"

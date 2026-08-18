@@ -17,10 +17,12 @@ description: >-
 | Item | Value |
 |------|--------|
 | 本机工程 | `kunming-flood-map/`（在「淹了么」仓库根下） |
-| 源页面（可改 CDN） | `昆明积水地图-0818.html` |
-| 线上目录 | `/workspace/kunming-flood-map` |
+| 唯一事实源 | `kunming-flood-map/html/`（index.html + css/app.css + js/data.js + js/app.js + vendor/） |
+| 数据改动 | 只改 `html/js/data.js`（hist 里 `ref` 指向事件点，坐标不重复维护） |
+| 根目录旧文件 | `昆明积水地图-0818.html` 已退化为跳转页，**不再是源** |
+| 线上目录 | `/home/ubuntu/kunming-flood-map` |
 | 线上地址 | http://43.180.135.43:8088/ |
-| SSH | `ubuntu@43.180.135.43`，密钥 `4h8g.pem`（也可用 `~/.ssh/yanleme-4h8g.pem`） |
+| SSH | `ubuntu@43.180.135.43`，密钥 `~/.ssh/yanleme-4h8g.pem` |
 | 容器 | `kunming-flood-map-nginx-1`，宿主机 **8088→80** |
 | 勿动 | `ai_learning` 占用的 **:80**（`/admin/`） |
 
@@ -30,46 +32,49 @@ description: >-
 kunming-flood-map/
   docker-compose.yml
   deploy/nginx.conf
-  html/index.html      # 线上用，Leaflet 走 /vendor/
-  html/vendor/
+  html/index.html
+  html/css/app.css
+  html/js/data.js       # 点位数据（events + hist）
+  html/js/app.js        # 应用逻辑
+  html/vendor/          # Leaflet 本地化
+  html/districts.geojson
   scripts/publish.ps1
 ```
 
 ## Deploy workflow (required)
 
-1. 若改了 `昆明积水地图-0818.html`：确保 Leaflet 在发布产物里是 `/vendor/leaflet.css` 与 `/vendor/leaflet.js`（脚本会自动替换 unpkg）。
-2. 在仓库根「淹了么」执行发布脚本（优先）：
+1. 直接改 `kunming-flood-map/html/` 下的文件（数据改 `js/data.js`，样式改 `css/app.css`，逻辑改 `js/app.js`）。无需任何同步步骤。
+2. 在仓库根「淹了么」执行发布脚本：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File ".\kunming-flood-map\scripts\publish.ps1"
 ```
 
-3. 确认脚本输出含 `完成 http://43.180.135.43:8088/`，并用 curl/浏览器验证 `200`。
-4. 向用户回报线上 URL；提醒强刷缓存。
+3. 确认脚本输出含 `done http://43.180.135.43:8088/ status=200`，并用 curl/浏览器验证。
+4. 向用户回报线上 URL；提醒强刷缓存（html/css/js 为 no-cache 协商缓存，正常刷新即可拿到新版）。
 
 ### PEM / SSH 注意
 
 - 密钥是 **SSH 私钥**，不是 HTTPS 证书；当前站点为 **HTTP:8088**。
-- Windows OpenSSH 读 PEM 失败时：复制到 `%USERPROFILE%\.ssh\yanleme-4h8g.pem`，`icacls` 去掉继承并只给当前用户 `R`（`publish.ps1` 已尽量处理）。
+- Windows OpenSSH 读 PEM 失败时：复制到 `%USERPROFILE%\.ssh\yanleme-4h8g.pem`，`icacls` 去掉继承并只给当前用户 `R`。
 - **勿**把 `4h8g.pem` 提交公开仓库（已在 `.gitignore`）。
 
 ### 脚本失败时的手动等价命令
 
 ```powershell
 $key = "$env:USERPROFILE\.ssh\yanleme-4h8g.pem"
-# 若无：从项目根 4h8g.pem 复制并收紧 ACL
-scp -i $key -o IdentitiesOnly=yes ".\kunming-flood-map\docker-compose.yml" ubuntu@43.180.135.43:/workspace/kunming-flood-map/
-scp -i $key -o IdentitiesOnly=yes ".\kunming-flood-map\deploy\nginx.conf" ubuntu@43.180.135.43:/workspace/kunming-flood-map/deploy/
-scp -i $key -o IdentitiesOnly=yes -r ".\kunming-flood-map\html\*" ubuntu@43.180.135.43:/workspace/kunming-flood-map/html/
-ssh -i $key -o IdentitiesOnly=yes ubuntu@43.180.135.43 "cd /workspace/kunming-flood-map && sudo docker compose up -d && sudo chmod -R a+rX html && sudo docker exec kunming-flood-map-nginx-1 nginx -s reload"
+tar -czf "$env:TEMP\kfm.tar.gz" -C kunming-flood-map html deploy
+scp -i $key "$env:TEMP\kfm.tar.gz" ubuntu@43.180.135.43:/tmp/kfm.tar.gz
+ssh -i $key ubuntu@43.180.135.43 "mkdir -p /home/ubuntu/kunming-flood-map && tar -xzf /tmp/kfm.tar.gz -C /home/ubuntu/kunming-flood-map && cd /home/ubuntu/kunming-flood-map && sudo docker compose up -d"
 ```
 
 ## Content edit checklist (before publish)
 
-- 改 UI/数据：优先改根目录 `昆明积水地图-0818.html`，再跑 `publish.ps1`（自动同步到 `html/index.html`）。
-- 坐标：底图高德 GCJ-02；点位默认 `POINT_CRS = "gcj"`（勿对国内取点再 WGS→GCJ）；GPS 定位用 `"wgs"`。微调用 `COORD_NUDGE`。
-- CSP / nginx：`deploy/nginx.conf` 已放行高德瓦片；改 CSP 后需一并上传并 reload。
+- 点位坐标：底图高德 **GCJ-02**；`data.js` 里存的就是 GCJ（`POINT_CRS = "gcj"`，勿再 WGS→GCJ）；浏览器 GPS 用 `"wgs"` 转换。微调用 `COORD_NUDGE`。
+- 从 OSM/Nominatim 取的是 **WGS84**，入库前必须转 GCJ-02（`app.js` 里的 `wgs84ToGcj02`）；百度是 **BD-09**，不能直接抄。
+- CSP / nginx：`deploy/nginx.conf` 已放行高德瓦片与 Nominatim；改 CSP 后随包上传并重启容器生效。
+- file:// 直开可用（相对路径 + data.js 全局变量），仅 districts.geojson 与 Nominatim 需网络。
 
 ## After deploy
 
-回报一句：已发布到 http://43.180.135.43:8088/ ，并说明是否同步了源 HTML。
+回报一句：已发布到 http://43.180.135.43:8088/ ，并提醒强刷缓存。
