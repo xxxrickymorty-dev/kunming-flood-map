@@ -182,6 +182,40 @@
           </tbody>
         </table>
 
+        <h2>全部点位一览</h2>
+        <p class="muted" id="catalog-caption">地图库全量：调研事件 + 常年易淹 + 用户补点。坐标为高德 GCJ-02。来源、高德链接与地图弹窗一致。</p>
+        <div class="catalog-tools">
+          <input class="search catalog-search" id="catalog-q" type="search" placeholder="筛地点、区县、水深、来源…" />
+          <div class="bar" id="catalog-bar">
+            <button type="button" class="on" data-catalog="all">全部</button>
+            <button type="button" data-catalog="0818">8.18</button>
+            <button type="button" data-catalog="0716">7.16</button>
+            <button type="button" data-catalog="0802">8.2–3</button>
+            <button type="button" data-catalog="hist">常年易淹</button>
+            <button type="button" data-catalog="ugc">用户补点</button>
+          </div>
+        </div>
+        <div class="catalog-wrap">
+          <table class="data catalog" id="catalog-table">
+            <thead>
+              <tr>
+                <th>编号</th>
+                <th>图层</th>
+                <th>地点</th>
+                <th>区县</th>
+                <th>时间</th>
+                <th>积水程度</th>
+                <th>交通影响</th>
+                <th>持续 / 清退</th>
+                <th>形态</th>
+                <th>来源链接</th>
+                <th>高德</th>
+              </tr>
+            </thead>
+            <tbody id="catalog-body"></tbody>
+          </table>
+        </div>
+
         <h2>对避险的含义</h2>
         <ul>
           <li>暴雨预报落地东/南时，优先绕开东二环下层、国贸路—长润街、牛街庄—贵昆涵洞。</li>

@@ -190,6 +190,108 @@ function sourceLinksFor(p) {
   return [...byUrl.entries()].map(([url, names]) => ({ name: names.join(" / "), url }));
 }
 
+function amapHref(lat, lng, name) {
+  return `https://uri.amap.com/marker?position=${lng},${lat}&name=${encodeURIComponent(name)}`;
+}
+function sourceLinksHtml(p) {
+  const links = sourceLinksFor(p);
+  if (links.length) {
+    return `<span class="links">${links.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.name)}</a>`).join("")}</span>`;
+  }
+  if (p.cat === "ugc") return "用户反馈（已交叉核实）";
+  return esc(p.source || "常年图层");
+}
+
+const EVT_WHEN = { "0818": "2026-08-18", "0716": "2026-07-16", "0802": "2026-08-02～03" };
+let catalogF = "all", catalogQ = "";
+
+function catalogRecords() {
+  const rows = [];
+  EVENTS.forEach((p) => {
+    rows.push({
+      id: p.id,
+      layer: "调研事件",
+      layerKey: p.evt,
+      name: p.name,
+      district: districtKey(p.district),
+      when: `${EVT_LABEL[p.evt]} · ${EVT_WHEN[p.evt]}`,
+      depth: p.depth,
+      impact: KIND_LABEL[p.kind],
+      duration: p.duration,
+      morph: MORPH_LABEL[p.morph] || p.morph,
+      hay: `${p.id} ${p.name} ${p.district} ${p.depth} ${p.source} ${p.duration} ${p.note}`,
+      p
+    });
+  });
+  HIST.forEach((p) => {
+    const ugc = p.cat === "ugc";
+    rows.push({
+      id: p.n,
+      layer: ugc ? "用户补点" : "常年易淹",
+      layerKey: ugc ? "ugc" : "hist",
+      name: p.name,
+      district: districtKey(p.district),
+      when: ugc ? "用户补点" : (p.evt ? `常年 · 兼 ${EVT_LABEL[p.evt]}` : "常年易淹"),
+      depth: p.depth,
+      impact: ugc ? "用户易淹" : (CAT[p.cat] || "常年"),
+      duration: p.ref ? `同址 ${p.ref}` : "—",
+      morph: CAT[p.cat] || p.cat,
+      hay: `${p.n} ${p.name} ${p.district} ${p.depth} ${p.note} ${p.source || ""}`,
+      p
+    });
+  });
+  return rows;
+}
+
+function paintCatalogTable() {
+  const body = document.getElementById("catalog-body");
+  const cap = document.getElementById("catalog-caption");
+  if (!body) return;
+  const all = catalogRecords();
+  const rows = all.filter((r) => {
+    if (catalogF !== "all" && r.layerKey !== catalogF) return false;
+    if (catalogQ && !r.hay.includes(catalogQ)) return false;
+    return true;
+  });
+  body.innerHTML = rows.map((r) => {
+    const ll = r.p._ll || toMapLL(r.p.lat, r.p.lng);
+    const [lat, lng] = ll;
+    return `<tr>
+      <td>${esc(r.id)}</td>
+      <td>${esc(r.layer)}</td>
+      <td class="place"><button type="button" class="catalog-goto" data-goto="${esc(r.id)}">${esc(r.name)}</button></td>
+      <td>${esc(r.district)}</td>
+      <td>${esc(r.when)}</td>
+      <td>${esc(r.depth)}</td>
+      <td>${esc(r.impact)}</td>
+      <td>${esc(r.duration)}</td>
+      <td>${esc(r.morph)}</td>
+      <td>${sourceLinksHtml(r.p)}</td>
+      <td class="amap"><a href="${esc(amapHref(lat, lng, r.name))}" target="_blank" rel="noopener">高德</a></td>
+    </tr>`;
+  }).join("");
+  if (cap) {
+    cap.textContent = `地图库全量 ${all.length} 条，当前筛选 ${rows.length} 条（调研事件 ${EVENTS.length} + 常年/用户 ${HIST.length}）。坐标为高德 GCJ-02。来源、高德链接与地图弹窗一致。`;
+  }
+}
+
+function gotoPoint(id) {
+  const ev = EVENTS.find((p) => p.id === id);
+  if (ev) {
+    setView(ev.evt, { fit: false });
+    map.flyTo(ev._ll, 15, { duration: 0.45 });
+    setTimeout(() => ev._marker.openPopup(), 320);
+    return;
+  }
+  const hi = HIST.find((p) => p.n === id);
+  if (hi) {
+    setView("hist", { fit: false });
+    if (histLayer[hi.n]) map.addLayer(histLayer[hi.n]);
+    map.flyTo(hi._ll, 15, { duration: 0.45 });
+    setTimeout(() => hi._marker.openPopup(), 320);
+  }
+}
+
 function popupHtml(title, lines, latlng, links) {
   const [lat, lng] = latlng;
   const body = lines.filter(Boolean).map((t) => `<p>${esc(t)}</p>`).join("");
@@ -531,6 +633,7 @@ function refreshDistrictStats() {
     lead.textContent = `调研事件 ${EVENTS.length} 处、常年/用户图层 ${HIST.length} 处。分区按昆明市县级行政区；经开并入官渡、高新并入五华。卡片数字为事件+图层合计。`;
   }
   paintMorphBars();
+  paintCatalogTable();
 }
 
 /* —— 视图切换 + hash 路由（可分享 #v=0818 / #v=d-西山 等） —— */
@@ -619,6 +722,11 @@ document.querySelector(".topnav").addEventListener("click", (e) => {
   if (btn && e.currentTarget.contains(btn)) setView(btn.dataset.view);
 });
 document.addEventListener("click", (e) => {
+  const go = e.target.closest("[data-goto]");
+  if (go) {
+    gotoPoint(go.dataset.goto);
+    return;
+  }
   const btn = e.target.closest("[data-jump]");
   if (btn) setView(btn.dataset.jump);
 });
@@ -644,6 +752,23 @@ document.getElementById("q-hist").addEventListener("input", debounce((e) => {
   qHist = e.target.value.trim();
   render();
 }, 120));
+const catalogBar = document.getElementById("catalog-bar");
+if (catalogBar) {
+  catalogBar.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-catalog]");
+    if (!b) return;
+    catalogF = b.dataset.catalog;
+    catalogBar.querySelectorAll("[data-catalog]").forEach((x) => x.classList.toggle("on", x === b));
+    paintCatalogTable();
+  });
+}
+const catalogQEl = document.getElementById("catalog-q");
+if (catalogQEl) {
+  catalogQEl.addEventListener("input", debounce((e) => {
+    catalogQ = e.target.value.trim();
+    paintCatalogTable();
+  }, 120));
+}
 
 /* —— 地点搜索：定位小区/路段，判断与淹水圈是否重叠 —— */
 const placeSuggestEl = document.getElementById("place-suggest");
