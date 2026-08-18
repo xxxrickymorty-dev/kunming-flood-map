@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>昆明积水地图 · 2026 汛期调研</title>
+  <link rel="stylesheet" href="/vendor/leaflet.css" />
+  <style>
+    :root {
+      --ink: #1f1b16;
+      --muted: #6b6258;
+      --panel: #fffdf8;
+      --panel-2: #f7f2e8;
+      --line: #e4dccf;
+      --today: #b42318;
+      --hist: #1d4ed8;
+      --sev-closed: #c1121f;
+      --sev-mid: #e85d04;
+      --sev-slow: #f59e0b;
+      --sev-ctrl: #4f46e5;
+      --sev-slow-ink: #1f1b16;
+      --safe: #15803d;
+      --ugc: #0f766e;
+      --nav: #1a1612;
+      --nav-fg: #f5efe4;
+      --nav-muted: #a89a88;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: "Source Han Sans SC", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--ink);
+      background: #f3efe6;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .topnav {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 10px 14px;
+      padding-top: max(10px, env(safe-area-inset-top));
+      background: var(--nav);
+      color: var(--nav-fg);
+      border-bottom: 1px solid #2c2620;
+      z-index: 1000;
+    }
+    .topnav .brand {
+      font-size: 15px;
+      font-weight: 750;
+      letter-spacing: 0.06em;
+      margin-right: 8px;
+      white-space: nowrap;
+    }
+    .topnav .brand span {
+      display: block;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      color: var(--nav-muted);
+      margin-top: 2px;
+    }
+    .topnav .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      flex: 1;
+    }
+    .topnav button {
+      border: 1px solid #3d342c;
+      background: transparent;
+      color: var(--nav-fg);
+      border-radius: 6px;
+      padding: 7px 12px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .topnav button:hover { background: #2a241e; }
+    .topnav button.on {
+      background: var(--today);
+      border-color: var(--today);
+      color: #fff;
+    }
+    .topnav button.hist.on,
+    .topnav button.report.on {
+      background: #1d4ed8;
+      border-color: #1d4ed8;
+    }
+
+    .shell { flex: 1; min-height: 0; position: relative; }
+
+    .app {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      height: 100%;
+    }
+    .app.hidden, .report.hidden, .hidden { display: none !important; }
+
+    .boards {
+      min-height: 0;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .col {
+      display: none;
+      flex-direction: column;
+      min-height: 0;
+      flex: 1;
+      background: var(--panel);
+    }
+    .col.show { display: flex; }
+    .col.hist { background: var(--panel-2); }
+    .col header { padding: 14px 14px 6px; }
+    .col header h1 {
+      margin: 0 0 6px;
+      font-size: 15px;
+      letter-spacing: 0.04em;
+    }
+    .col header p, .note {
+      margin: 0;
+      font-size: 11px;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+    .period-banner {
+      margin: 0 14px 10px;
+      padding: 10px 11px;
+      background: #efe8d8;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--ink);
+    }
+    .period-banner strong { color: var(--today); }
+    .note { padding: 0 14px 10px; }
+    .bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 0 14px 10px;
+    }
+    .bar button, .search {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 6px;
+      font-size: 11px;
+    }
+    .bar button {
+      padding: 5px 8px;
+      cursor: pointer;
+    }
+    .bar button.on { background: var(--today); color: #fff; border-color: var(--today); }
+    .col.hist .bar button.on { background: var(--hist); border-color: var(--hist); }
+    .search {
+      margin: 0 14px 8px;
+      width: calc(100% - 28px);
+      padding: 7px 8px;
+    }
+    .list { flex: 1; overflow: auto; padding: 0 8px 16px; }
+    .item {
+      display: grid;
+      grid-template-columns: 28px 1fr auto;
+      gap: 7px;
+      padding: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      align-items: start;
+    }
+    .item:hover, .item.on { background: #efe8d8; }
+    .badge {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 800;
+      color: #fff;
+      background: var(--sev-closed);
+      margin-top: 1px;
+    }
+    .badge.mid { background: var(--sev-mid); }
+    .badge.slow { background: var(--sev-slow); color: var(--sev-slow-ink); }
+    .badge.ctrl { background: var(--sev-ctrl); }
+    .badge.sq {
+      border-radius: 3px;
+      transform: rotate(45deg);
+      background: var(--hist);
+    }
+    .badge.sq span { transform: rotate(-45deg); display: block; }
+    .item h3 { margin: 0; font-size: 13px; font-weight: 700; }
+    .item p { margin: 2px 0 0; font-size: 11px; color: var(--muted); }
+    .meta { font-size: 11px; font-weight: 700; color: var(--sev-closed); white-space: nowrap; }
+    .meta.mid { color: var(--sev-mid); }
+    .meta.slow { color: #b45309; }
+    .meta.ctrl { color: var(--sev-ctrl); }
+    .col.hist .meta { color: var(--hist); }
+    .sheet-toggle { display: none; }
+    #map { height: 100%; min-height: 0; }
+    .map-tools {
+      position: absolute;
+      z-index: 500;
+      left: calc(340px + 12px);
+      top: 12px;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .map-tools.hidden { display: none; }
+    .map-tools button {
+      background: #fffdf8;
+      color: var(--ink);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .legend {
+      position: absolute;
+      z-index: 500;
+      right: 12px;
+      bottom: 12px;
+      background: rgba(255,253,248,0.94);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 12px;
+      line-height: 1.7;
+      max-width: 220px;
+    }
+    .legend.hidden { display: none; }
+    .popup h3 { margin: 0 0 6px; font-size: 15px; }
+    .popup p { margin: 0 0 6px; font-size: 13px; }
+    .leaflet-popup-content-wrapper { border-radius: 8px; }
+    .pin-wrap { background: none !important; border: 0 !important; }
+    .pin {
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      color: #fff;
+      border: 3px solid #fff;
+    }
+    .pin.closed {
+      width: 42px; height: 42px;
+      background: var(--sev-closed);
+      border-radius: 50% 50% 50% 6px;
+      transform: rotate(-45deg);
+      font-size: 13px;
+    }
+    .pin.closed span { transform: rotate(45deg); display: block; }
+    .pin.mid {
+      width: 36px; height: 36px;
+      background: var(--sev-mid);
+      border-radius: 50%;
+      font-size: 12px;
+    }
+    .pin.slow {
+      width: 36px; height: 36px;
+      background: var(--sev-slow);
+      color: var(--sev-slow-ink);
+      border-radius: 8px;
+      font-size: 12px;
+    }
+    .pin.ctrl {
+      width: 36px; height: 36px;
+      background: var(--sev-ctrl);
+      border-radius: 4px;
+      font-size: 11px;
+    }
+    .pin.hist {
+      width: 34px; height: 34px;
+      background: var(--hist);
+      transform: rotate(45deg);
+      font-size: 12px;
+    }
+    .pin.hist span { transform: rotate(-45deg); display: block; }
+    .pin.ugc {
+      width: 34px; height: 34px;
+      background: var(--ugc);
+      border-radius: 50%;
+      font-size: 11px;
+    }
+    .pin.safe {
+      width: 34px; height: 34px;
+      background: var(--safe);
+      border-radius: 6px;
+      font-size: 11px;
+    }
+    .badge.ugc { background: var(--ugc); }
+    .badge.safe { background: var(--safe); }
+    .meta.ugc { color: var(--ugc); }
+    .meta.safe { color: var(--safe); }
+    .legend .swatch {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: -1px;
+      border: 1px solid rgba(0,0,0,0.12);
+    }
+    .legend .swatch.drop {
+      border-radius: 50% 50% 50% 2px;
+      transform: rotate(-45deg);
+    }
+    .legend .swatch.sq { border-radius: 2px; }
+    .legend .swatch.diamond {
+      border-radius: 2px;
+      transform: rotate(45deg);
+    }
+
+    /* —— 区域报告 —— */
+    .report {
+      height: 100%;
+      overflow: auto;
+      background:
+        radial-gradient(ellipse 80% 50% at 10% 0%, #ebe4d6 0%, transparent 55%),
+        linear-gradient(180deg, #f7f2e8 0%, #f3efe6 40%, #ebe6dc 100%);
+    }
+    .report-inner {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 28px 22px 64px;
+    }
+    .report h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      letter-spacing: 0.04em;
+      font-weight: 800;
+    }
+    .report .lead {
+      margin: 0 0 18px;
+      font-size: 14px;
+      line-height: 1.65;
+      color: var(--muted);
+      max-width: 42em;
+    }
+    .report .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 22px;
+    }
+    .report .chip {
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      background: #fff;
+      border: 1px solid var(--line);
+      color: var(--ink);
+    }
+    .report .chip.hot { background: #b42318; color: #fff; border-color: #b42318; }
+    .report .chip.blue { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+    .stat {
+      background: #fffdf8;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px 12px;
+    }
+    .stat b {
+      display: block;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--today);
+      margin-bottom: 4px;
+    }
+    .stat span { font-size: 12px; color: var(--muted); line-height: 1.4; }
+    .callout {
+      background: #fff7ed;
+      border: 1px solid #f0d9b8;
+      border-left: 4px solid var(--today);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 28px;
+      font-size: 14px;
+      line-height: 1.65;
+    }
+    .callout.info {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      border-left-color: var(--hist);
+    }
+    .callout strong { display: block; margin-bottom: 6px; font-size: 13px; }
+    .report h2 {
+      margin: 28px 0 10px;
+      font-size: 18px;
+      letter-spacing: 0.03em;
+    }
+    .report h3 {
+      margin: 18px 0 8px;
+      font-size: 15px;
+    }
+    .report p, .report li {
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--ink);
+    }
+    .report ul { margin: 0 0 12px; padding-left: 1.2em; }
+    .report .muted { color: var(--muted); font-size: 12px; }
+    .bars {
+      display: grid;
+      gap: 8px;
+      margin: 12px 0 20px;
+    }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 7.5em 1fr 2.2em;
+      gap: 10px;
+      align-items: center;
+      font-size: 13px;
+    }
+    .bar-row.wide {
+      grid-template-columns: 11em 1fr 2.2em;
+    }
+    .bar-track {
+      height: 10px;
+      background: #e8e0d2;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      background: var(--today);
+      border-radius: 4px;
+    }
+    .bar-fill.blue { background: var(--hist); }
+    .corridor {
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .corridor:last-child { border-bottom: 0; }
+    .corridor .head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .corridor .head h3 { margin: 0; }
+    .tag {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .tag.mid { background: #ffedd5; color: #9a3412; }
+    .tag.low { background: #e0e7ff; color: #3730a3; }
+    .corridor .scope { font-weight: 650; margin: 0 0 4px; font-size: 13px; }
+    .corridor .meta-line {
+      margin: 0 0 6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin: 12px 0 8px;
+    }
+    table.data {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin: 10px 0 18px;
+      background: #fffdf8;
+    }
+    table.data th, table.data td {
+      border: 1px solid var(--line);
+      padding: 9px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    table.data th {
+      background: #efe8d8;
+      font-weight: 700;
+    }
+    table.data tr.hot td { background: #fff5f4; }
+    .jump-map {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--today);
+      cursor: pointer;
+      text-decoration: underline;
+      background: none;
+      border: 0;
+      padding: 0;
+      font-family: inherit;
+    }
+
+    /* —— 平板 / 手机：地图为主，列表改底部抽屉 —— */
+    @media (max-width: 960px) {
+      .topnav {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        padding: 8px 10px;
+        padding-top: max(8px, env(safe-area-inset-top));
+      }
+      .topnav .brand {
+        font-size: 14px;
+        margin-right: 0;
+      }
+      .topnav .brand span { display: none; }
+      .topnav .tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        gap: 6px;
+        padding-bottom: 2px;
+        scrollbar-width: none;
+      }
+      .topnav .tabs::-webkit-scrollbar { display: none; }
+      .topnav button {
+        flex: 0 0 auto;
+        padding: 8px 12px;
+        font-size: 13px;
+        min-height: 36px;
+      }
+
+      .app {
+        display: block;
+        position: relative;
+        height: 100%;
+      }
+      #map {
+        position: absolute;
+        inset: 0;
+        height: auto;
+        z-index: 1;
+      }
+      .boards {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 700;
+        max-height: min(58vh, 520px);
+        border-right: 0;
+        border-top: 1px solid var(--line);
+        border-radius: 14px 14px 0 0;
+        background: var(--panel);
+        transform: translateY(calc(100% - 56px));
+        transition: transform 0.28s ease;
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+      .boards.open {
+        transform: translateY(0);
+      }
+      .sheet-toggle {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        width: 100%;
+        border: 0;
+        border-bottom: 1px solid var(--line);
+        background: var(--panel);
+        color: var(--ink);
+        padding: 8px 12px 10px;
+        font-size: 13px;
+        font-weight: 650;
+        cursor: pointer;
+        font-family: inherit;
+        border-radius: 14px 14px 0 0;
+        flex: 0 0 auto;
+      }
+      .sheet-grip {
+        width: 40px;
+        height: 4px;
+        border-radius: 2px;
+        background: #cfc4b4;
+      }
+      .col header { padding: 10px 14px 4px; }
+      .col header h1 { font-size: 14px; }
+      .period-banner {
+        margin: 0 12px 8px;
+        padding: 8px 10px;
+        font-size: 11px;
+      }
+      .bar { padding: 0 12px 8px; gap: 6px; }
+      .bar button {
+        padding: 7px 10px;
+        font-size: 12px;
+        min-height: 34px;
+      }
+      .search {
+        margin: 0 12px 8px;
+        width: calc(100% - 24px);
+        padding: 10px 10px;
+        font-size: 14px;
+      }
+      .list { padding: 0 8px 20px; -webkit-overflow-scrolling: touch; }
+      .item { padding: 10px 8px; min-height: 44px; }
+
+      .map-tools {
+        left: 10px;
+        top: 10px;
+        right: auto;
+      }
+      .map-tools button {
+        padding: 8px 11px;
+        font-size: 13px;
+        min-height: 36px;
+      }
+      .legend {
+        right: 10px;
+        bottom: calc(56px + 10px + env(safe-area-inset-bottom));
+        max-width: 150px;
+        padding: 7px 9px;
+        font-size: 11px;
+        line-height: 1.45;
+        transition: bottom 0.28s ease;
+      }
+      body:has(.boards.open) .legend {
+        bottom: calc(min(58vh, 520px) + 8px + env(safe-area-inset-bottom));
+      }
+
+      .leaflet-popup-content-wrapper {
+        max-width: min(260px, 78vw);
+      }
+      .leaflet-popup-content {
+        margin: 10px 12px;
+        font-size: 13px;
+        line-height: 1.45;
+      }
+      .popup h3 { font-size: 14px; }
+      .popup p { font-size: 12px; margin-bottom: 4px; }
+      .pin.closed { width: 34px; height: 34px; font-size: 11px; }
+      .pin.mid, .pin.slow, .pin.ctrl, .pin.hist { width: 28px; height: 28px; font-size: 10px; }
+      .leaflet-control-zoom a {
+        width: 34px !important;
+        height: 34px !important;
+        line-height: 34px !important;
+      }
+
+      .report-inner { padding: 18px 14px 48px; }
+      .report h1 { font-size: 22px; }
+      .stats { grid-template-columns: 1fr 1fr; }
+      .two-col { grid-template-columns: 1fr; }
+      table.data { font-size: 12px; display: block; overflow-x: auto; }
+    }
+
+    @media (max-width: 960px) and (orientation: landscape) {
+      .boards { max-height: 70vh; }
+      .boards:not(.open) { transform: translateY(calc(100% - 48px)); }
+    }
+  </style>
+</head>
+<body>
+  <nav class="topnav" aria-label="主导航">
+    <div class="brand">
+      昆明积水地图
+      <span>2026 汛期调研 · 公开通报整理</span>
+    </div>
+    <div class="tabs">
+      <button type="button" class="on" data-view="all">全部淹水</button>
+      <button type="button" data-view="0818">8.18</button>
+      <button type="button" data-view="0716">7.16</button>
+      <button type="button" data-view="0802">8.2–3</button>
+      <button type="button" class="hist" data-view="hist">常年易淹</button>
+      <button type="button" class="report" data-view="report">区域分析</button>
+    </div>
+  </nav>
+
+  <div class="shell">
+    <div class="app" id="view-map">
+      <div class="boards" id="boards">
+        <button type="button" class="sheet-toggle" id="sheet-toggle" aria-expanded="false">
+          <span class="sheet-grip" aria-hidden="true"></span>
+          <span id="sheet-label">点位列表</span>
+        </button>
+        <aside class="col today show" id="panel-evt">
+          <header>
+            <h1 id="evt-title">调研事件点</h1>
+            <p id="evt-sub">依据 2026 汛期公开通报：昆水管网、交警、消防、机场提示。</p>
+          </header>
+          <div class="period-banner" id="period-banner"></div>
+          <div class="bar" id="kind-bar">
+            <button class="on" data-kind="all">全部状态</button>
+            <button data-kind="closed">断交/重度</button>
+            <button data-kind="mid">中度</button>
+            <button data-kind="slow">缓行</button>
+            <button data-kind="ctrl">管制/未测深</button>
+          </div>
+          <input class="search" id="q-evt" type="search" placeholder="搜路段、区县、来源" />
+          <div class="list" id="list-evt"></div>
+        </aside>
+        <aside class="col hist" id="panel-hist">
+          <header>
+            <h1>常年易淹区</h1>
+            <p>历史高频点：下穿、低洼主干道、河道老社区、城郊结合部。不代表此刻仍淹。</p>
+          </header>
+          <div class="period-banner" style="background:#e8eefc">
+            <strong style="color:var(--hist)">常年图层</strong>：含历史高频点。青绿圆 = 用户反馈易淹（已交叉核实）；绿方 = 用户反馈本次未淹。
+          </div>
+          <div class="bar">
+            <button class="on" data-hist="all">全部</button>
+            <button data-hist="tunnel">下穿立交</button>
+            <button data-hist="road">低洼路</button>
+            <button data-hist="river">河道老区</button>
+            <button data-hist="new">城郊新区</button>
+            <button data-hist="ugc">用户补点</button>
+            <button data-hist="safe">相对未淹</button>
+          </div>
+          <input class="search" id="q-hist" type="search" placeholder="搜历史片区" />
+          <div class="list" id="list-hist"></div>
+        </aside>
+      </div>
+      <div id="map"></div>
+    </div>
+
+    <div class="report hidden" id="view-report">
+      <div class="report-inner">
+        <h1>昆明积水 · 区域分析</h1>
+        <p class="lead">
+          基于 2026-07-16 / 08-02~03 / 08-18 三场公开积水记录（命名点约 39 条）与常年易淹图层交叉。结论服务避险绕行，不是排水工程评估。
+        </p>
+        <div class="chips">
+          <span class="chip hot">官渡占命名点约 64%</span>
+          <span class="chip">4 条极高/高风险走廊</span>
+          <span class="chip blue">国贸路双场次复发</span>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><b>官渡</b><span>事件密度第一区</span></div>
+          <div class="stat"><b>4</b><span>核心热点走廊</span></div>
+          <div class="stat"><b>≥8h</b><span>最长可见断交（牛街庄/国贸/长润）</span></div>
+          <div class="stat"><b>2+</b><span>跨场次重叠路段</span></div>
+        </div>
+
+        <div class="callout">
+          <strong>一句话结论</strong>
+          2026 汛期公开积水高度集中在官渡东/南：东二环下层、关上—官渡广场轴、贵昆路涵洞带、广福—前卫南片。西翼（海源/滇缅）与呈贡是「雨心偏移」时的第二梯队；盘龙道路名单轻，但河道老社区风险另算。
+        </div>
+
+        <h2>区县分布</h2>
+        <p class="muted">命名点（不含 7.16 未点名轻度 13 处）· 来源：昆明积水事件汇总 CSV</p>
+        <div class="bars" id="district-bars"></div>
+
+        <h3>形态类型粗分</h3>
+        <div class="bars" id="morph-bars"></div>
+        <p class="muted">下穿/立交与主干道低洼合计占绝大多数；交通影响主要来自「桥下连续带」。</p>
+
+        <table class="data">
+          <thead>
+            <tr><th>区县</th><th>占比</th><th>角色</th><th>区域特征</th></tr>
+          </thead>
+          <tbody>
+            <tr class="hot"><td>官渡</td><td>约 64%</td><td>主战场</td><td>三场均有；东二环、国贸路、牛街庄、广福南片高度集中</td></tr>
+            <tr><td>经开</td><td>约 13%</td><td>东延涵洞带</td><td>与贵昆路/牛街庄同一走廊；早报与交警快照不完全同步</td></tr>
+            <tr><td>呈贡</td><td>约 8%</td><td>新区过程雨</td><td>8.2–3 临时管制；水深公开不足</td></tr>
+            <tr><td>五华</td><td>约 5%</td><td>西翼暴雨</td><td>7.16 海源/滇缅重度；本样本无 8.18 主干点</td></tr>
+            <tr><td>盘龙</td><td>约 5%</td><td>轻触 + 河道老区</td><td>道路名单少；金汁河/盘龙江沿岸老社区易被漏掉</td></tr>
+            <tr><td>西山</td><td>约 3%</td><td>永昌低洼</td><td>华昌×采莲邻近永昌；历史最深可达米级</td></tr>
+          </tbody>
+        </table>
+
+        <h2>六大热点走廊</h2>
+        <p class="muted">按「同场连片 + 跨场复发 + 断交时长」排序，不是单纯点数。</p>
+
+        <div class="corridor">
+          <div class="head"><h3>1. 东二环下层走廊</h3><span class="tag">极高</span></div>
+          <p class="scope">二环东路 · 石虎关—南屏苑—锦都—昙华寺</p>
+          <p class="meta-line">官渡 · 7.16 重度 + 8.18 多点断交 · 水深 30–50+ cm</p>
+          <p>桥下连续低洼带；一场雨可连片断交，清退常拖到午后甚至傍晚清淤。</p>
+          <button type="button" class="jump-map" data-jump="0818">在地图看 8.18 该片 →</button>
+        </div>
+        <div class="corridor">
+          <div class="head"><h3>2. 关上—官渡广场轴</h3><span class="tag">极高</span></div>
+          <p class="scope">国贸路 · 金汁路至官渡广场 · 民航路长润街下穿</p>
+          <p class="meta-line">官渡 · 国贸路双场次；长润街 8.18 加深 · 30→50 cm</p>
+          <p>低洼主干道 + 下穿叠加；国贸路 7.16 中度、8.18 断交≥8h，属「反复发作」点。</p>
+          <button type="button" class="jump-map" data-jump="0818">在地图看该轴 →</button>
+        </div>
+        <div class="corridor">
+          <div class="head"><h3>3. 贵昆路—牛街庄—经开涵洞带</h3><span class="tag">高</span></div>
+          <p class="scope">牛街庄隧道 · 金马村涵洞 · 河岸村 · 经东路</p>
+          <p class="meta-line">官渡 / 经开 · 8.18 · 30–40 cm（牛街庄历史可更深）</p>
+          <p>铁路/道路下穿集群；牛街庄断交可见≥8h，东向出城与机场衔接受阻。</p>
+          <button type="button" class="jump-map" data-jump="0818">在地图看涵洞带 →</button>
+        </div>
+        <div class="corridor">
+          <div class="head"><h3>4. 广福—前卫—昌宏南片</h3><span class="tag">高</span></div>
+          <p class="scope">前卫西路×广福 · 希望路×广福 · 彩云北×昌宏/雨龙</p>
+          <p class="meta-line">官渡南 · 7.16 重度/中度为主 · 前卫 &gt;50→25 cm</p>
+          <p>短时强降雨雨心偏南时先淹；前卫雨量站 3h 80.9 mm 与重度点对应。</p>
+          <button type="button" class="jump-map" data-jump="0716">在地图看 7.16 南片 →</button>
+        </div>
+        <div class="corridor">
+          <div class="head"><h3>5. 海源—滇缅西部轴</h3><span class="tag mid">中高</span></div>
+          <p class="scope">海源中路 · 滇缅大道至黄土坡立交</p>
+          <p class="meta-line">五华 / 西山交界 · 仅 7.16 出现在本样本 · &gt;50 cm</p>
+          <p>雨带偏西时的「另一条脊」；本样本未与 8.18 叠加，但不能当安全区。</p>
+          <button type="button" class="jump-map" data-jump="0716">在地图看西翼 →</button>
+        </div>
+        <div class="corridor">
+          <div class="head"><h3>6. 呈贡环湖 / 下穿</h3><span class="tag low">中（数据不全）</span></div>
+          <p class="scope">金桂街 · 兴呈路小古城 · 昆玉路下穿</p>
+          <p class="meta-line">呈贡 · 8.2–3 · 官方未公开水深</p>
+          <p>新区主干道 + 下穿管制型；水深缺公开数据，地图上易被低估。</p>
+          <button type="button" class="jump-map" data-jump="0802">在地图看呈贡 →</button>
+        </div>
+
+        <h2>复发与差异：雨心在哪，淹哪</h2>
+        <div class="two-col">
+          <div>
+            <h3>跨场次重叠</h3>
+            <ul>
+              <li><strong>国贸路—官渡广场</strong>：7.16 中度 → 8.18 断交≥8h，阈值不高。</li>
+              <li><strong>二环东路下层</strong>：两场都成串，走廊级而非单点。</li>
+              <li><strong>雨龙 / 昌宏 / 彩云北</strong>：7.16 中度 + 8.18 短时断交。</li>
+            </ul>
+          </div>
+          <div>
+            <h3>场次差异</h3>
+            <ul>
+              <li><strong>7.16</strong>：前卫西路重度 + 海源/滇缅西翼；雨心偏南与西。</li>
+              <li><strong>8.2–3</strong>：呈贡与矣六/小板桥；水深公开缺失。</li>
+              <li><strong>8.18</strong>：金马凉亭 24h 158.1 mm；长润街白天仍加深。</li>
+            </ul>
+          </div>
+        </div>
+
+        <h2>常年易淹 vs 交警名单</h2>
+        <div class="callout info">
+          <strong>名单漏掉的「住区风险」</strong>
+          交警/管网公开点以道路通行为主。盘龙江、金汁河沿岸老社区与西山永昌，在蓝色常年易淹层权重高，但在 8.18 断交名单里几乎不出现——回家/小区进水场景要单独看蓝层。
+        </div>
+        <table class="data">
+          <thead>
+            <tr><th>图层</th><th>主要覆盖</th><th>适合回答</th><th>盲区</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>调研事件点（红）</td><td>主干道、下穿、立交、管制</td><td>今天能不能开车过</td><td>小区内部、未点名轻度、呈贡水深</td></tr>
+            <tr><td>常年易淹（蓝）</td><td>下穿 + 低洼路 + 河道老区 + 城郊</td><td>这片一贯会不会淹</td><td>雨心偏移时的「新点」</td></tr>
+          </tbody>
+        </table>
+
+        <h2>对避险的含义</h2>
+        <ul>
+          <li>暴雨预报落地东/南时，优先绕开东二环下层、国贸路—长润街、牛街庄—贵昆涵洞。</li>
+          <li>下穿易「持续恶化」：长润街上午 30 cm、午后 50 cm 仍断交，不宜过早涉水。</li>
+          <li>前卫西路有 7.16 官方重度记录，不能因 8.18 未列就忽略。</li>
+          <li>雨带偏西/偏南时提高海源—滇缅、呈贡下穿权重。</li>
+        </ul>
+        <p class="muted">
+          数据边界：坐标为路口近似；部分呈贡/经开清退时刻缺失；轻度 13 处未点名；历史最深（牛街庄 2m+、永昌 1.1m）来自历年报道。
+        </p>
+        <p style="margin-top:24px">
+          <button type="button" class="jump-map" data-jump="all">回到全部淹水地图 →</button>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="map-tools" id="map-tools">
+    <button type="button" id="btn-locate">我的位置</button>
+    <button type="button" id="btn-fit">看全图</button>
+  </div>
+  <div class="legend" id="legend">
+    <div id="legend-evt">
+      <div><span class="swatch drop" style="background:#c1121f"></span>断交 / 重度</div>
+      <div><span class="swatch" style="background:#e85d04"></span>中度未断交</div>
+      <div><span class="swatch sq" style="background:#f59e0b"></span>缓行</div>
+      <div><span class="swatch sq" style="background:#4f46e5"></span>管制 / 未测深</div>
+    </div>
+    <div id="legend-hist" class="hidden">
+      <div><span class="swatch diamond" style="background:#1d4ed8"></span>常年易淹</div>
+      <div><span class="swatch" style="background:#0f766e"></span>用户补点·易淹</div>
+      <div><span class="swatch sq" style="background:#15803d"></span>用户反馈·未淹</div>
+      <div>蓝虚线圈 · 大致影响范围</div>
+    </div>
+  </div>
+
+  <script src="/vendor/leaflet.js"></script>
+  <script>
+    function outOfChina(lng, lat) {
+      return lng < 72.004 || lng > 137.8347 || lat < 0.8293 || lat > 55.8271;
+    }
+    function transformLat(x, y) {
+      let r = -100 + 2 * x + 3 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
+      r += (20 * Math.sin(6 * x * Math.PI) + 20 * Math.sin(2 * x * Math.PI)) * 2 / 3;
+      r += (20 * Math.sin(y * Math.PI) + 40 * Math.sin(y / 3 * Math.PI)) * 2 / 3;
+      r += (160 * Math.sin(y / 12 * Math.PI) + 320 * Math.sin(y * Math.PI / 30)) * 2 / 3;
+      return r;
+    }
+    function transformLng(x, y) {
+      let r = 300 + x + 2 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
+      r += (20 * Math.sin(6 * x * Math.PI) + 20 * Math.sin(2 * x * Math.PI)) * 2 / 3;
+      r += (20 * Math.sin(x * Math.PI) + 40 * Math.sin(x / 3 * Math.PI)) * 2 / 3;
+      r += (150 * Math.sin(x / 12 * Math.PI) + 300 * Math.sin(x / 30 * Math.PI)) * 2 / 3;
+      return r;
+    }
+    function wgs84ToGcj02(lng, lat) {
+      if (outOfChina(lng, lat)) return [lng, lat];
+      const a = 6378245, ee = 0.00669342162296594323;
+      let dLat = transformLat(lng - 105, lat - 35);
+      let dLng = transformLng(lng - 105, lat - 35);
+      const radLat = lat / 180 * Math.PI;
+      let magic = Math.sin(radLat);
+      magic = 1 - ee * magic * magic;
+      const sqrtMagic = Math.sqrt(magic);
+      dLat = (dLat * 180) / ((a * (1 - ee)) / (magic * sqrtMagic) * Math.PI);
+      dLng = (dLng * 180) / (a / sqrtMagic * Math.cos(radLat) * Math.PI);
+      return [lng + dLng, lat + dLat];
+    }
+    /**
+     * 底图是高德瓦片（GCJ-02）。
+     * - 点位 lat/lng：按国内地图/高德取点 → 用 "gcj"（默认，不再二次加密）
+     * - 浏览器 GPS / 国际坐标 → 用 "wgs"（做 WGS84→GCJ）
+     * 若仍整体偏移，可微调 COORD_NUDGE（单位：度，约 0.001 ≈ 100m）
+     */
+    const POINT_CRS = "gcj";
+    const COORD_NUDGE = { lat: 0, lng: 0 };
+    function toMapLL(lat, lng, from) {
+      const src = from || POINT_CRS;
+      let outLat = lat, outLng = lng;
+      if (src === "wgs") {
+        const [gLng, gLat] = wgs84ToGcj02(lng, lat);
+        outLat = gLat;
+        outLng = gLng;
+      }
+      return [outLat + COORD_NUDGE.lat, outLng + COORD_NUDGE.lng];
+    }
+
+    const EVT_LABEL = { "0818": "8.18", "0716": "7.16", "0802": "8.2–3" };
+    const KIND_LABEL = { closed: "断交/重度", mid: "中度", slow: "缓行", ctrl: "管制/未测深" };
+    const PIN_CLASS = { closed: "closed", mid: "mid", slow: "slow", ctrl: "ctrl" };
+    const RING = { closed: "#c1121f", mid: "#e85d04", slow: "#f59e0b", ctrl: "#4f46e5" };
+
+    const PERIOD = {
+      all: {
+        title: "调研事件点 · 全部场次",
+        sub: "依据 2026 汛期公开通报：昆水管网、交警、消防、机场提示。",
+        banner: "<strong>全部场次</strong>：合并 7.16 / 8.2–3 / 8.18。积水高度集中在官渡东南。常年易淹请切顶部「常年易淹」分页。"
+      },
+      "0818": {
+        title: "8.18 强降雨 · 淹水点",
+        sub: "降雨主时段 17 日 23 时–18 日 6 时 · 金马凉亭站 24h 158.1 mm",
+        banner: "<strong>8.18</strong>：东向官渡/经开吃紧。牛街庄、长润街、国贸路可见断交 ≥8h；长润街白天从 30 cm 加深到 50 cm；日新立交上午约 50 cm。"
+      },
+      "0716": {
+        title: "7.16 大暴雨 · 淹水点",
+        sub: "凌晨约 01:00 起 · 前卫雨量站 3 小时 80.9 mm · 昆水管网 24 处",
+        banner: "<strong>7.16</strong>：重度 6 处含<strong>前卫西路与广福路交叉口</strong>（&gt;50→25 cm，至少约 7h）。雨心偏南与西：广福南片 + 海源/滇缅。国贸路当日为中度，8.18 再发。"
+      },
+      "0802": {
+        title: "8.2–3 局部暴雨 · 淹水点",
+        sub: "防汛Ⅳ级 · 官渡 / 呈贡 / 经开 · 公开水深不足",
+        banner: "<strong>8.2–3</strong>：呈贡金桂街、兴呈路、昆玉路下穿临时管制；官渡小板桥/矣六局部积水。水深与清退时刻公开少，地图上易低估。"
+      }
+    };
+
+    const EVENTS = [
+      { id: "E1", evt: "0818", kind: "closed", n: 1, district: "官渡", name: "贵昆路牛街庄隧道", depth: "约 30 cm", duration: "09:20–17:00 仍断交（可见 ≥8 小时）", note: "降雨主时段 17 日 23 时–18 日 6 时。金马凉亭站 24h 雨量 158.1 mm。", source: "昆明交警（本地宝）", lat: 25.0128, lng: 102.7668 },
+      { id: "E2", evt: "0818", kind: "closed", n: 2, district: "官渡", name: "民航路长润街下穿", depth: "30→50 cm", duration: "09:20 约 30 cm；11:00–17:00 约 50 cm 仍断交", note: "下穿持续恶化型。", source: "昆明交警（本地宝）", lat: 25.0221, lng: 102.7362 },
+      { id: "E3", evt: "0818", kind: "closed", n: 3, district: "官渡", name: "国贸路 · 金汁路至官渡广场", depth: "40→30 cm", duration: "09:20–13:00 约 40 cm；17:00 约 30 cm 仍断交", note: "7.16 曾为中度点，8.18 再次断交。", source: "昆明交警（本地宝）", lat: 25.0155, lng: 102.74 },
+      { id: "E4", evt: "0818", kind: "closed", n: 4, district: "官渡", name: "春城路日新立交转盘", depth: "50→40 cm", duration: "10:15 约 50 cm；13:00 约 40 cm；17:00 退出（约 4–7 小时）", note: "当日最深之一。", source: "昆明交警 / 澎湃", lat: 25.00518, lng: 102.73142 },
+      { id: "E5", evt: "0818", kind: "closed", n: 5, district: "官渡", name: "二环东路下层 · 南屏苑", depth: "约 40 cm", duration: "09:20–13:00 断交；17:00 消退正清淤", note: "东二环下层。", source: "昆明交警（本地宝）", lat: 25.03175, lng: 102.74328 },
+      { id: "E6", evt: "0818", kind: "closed", n: 6, district: "官渡", name: "二环东路石虎关立交底层", depth: "约 40 cm", duration: "09:20–13:00 断交；17:00 北向南主道消退清淤", note: "", source: "昆明交警（本地宝）", lat: 25.02311, lng: 102.74229 },
+      { id: "E7", evt: "0818", kind: "closed", n: 7, district: "官渡", name: "民航路官渡广场", depth: "30→20 cm", duration: "10:15 约 30 cm；13:00–17:00 约 20 cm 仍断交", note: "", source: "昆明交警 / 澎湃", lat: 25.0146, lng: 102.74244 },
+      { id: "E8", evt: "0818", kind: "closed", n: 8, district: "官渡", name: "东风东路与曙光路交叉口", depth: "40→20 cm", duration: "09:20–11:00 断交；13:00 缓行约 20 cm", note: "昙华灯具市场附近。", source: "昆明交警（本地宝）", lat: 25.0408, lng: 102.7356 },
+      { id: "E9", evt: "0818", kind: "closed", n: 9, district: "官渡", name: "二环东路下层 · 锦都酒店", depth: "40→20 cm", duration: "10:15–11:00 断交；13:00 缓行约 20 cm", note: "", source: "昆明交警 / 澎湃", lat: 25.0278, lng: 102.7408 },
+      { id: "E10", evt: "0818", kind: "closed", n: 10, district: "官渡", name: "东郊路菊华立交下层", depth: "约 30 cm", duration: "09:20–11:00 断交；13:00 退出", note: "", source: "昆明交警（本地宝）", lat: 25.0436, lng: 102.7532 },
+      { id: "E11", evt: "0818", kind: "closed", n: 11, district: "官渡", name: "彩云北路与昌宏路交叉口", depth: "约 30 cm", duration: "09:20–10:15 断交；约 11:00 前退出", note: "", source: "昆明交警（本地宝）", lat: 24.99473, lng: 102.76368 },
+      { id: "E12", evt: "0818", kind: "closed", n: 12, district: "官渡", name: "彩云北路与经桥路辅道", depth: "约 30 cm", duration: "早间断交；约 11:00 前退出", note: "", source: "昆明交警（本地宝）", lat: 24.9916, lng: 102.7554 },
+      { id: "E13", evt: "0818", kind: "closed", n: 13, district: "官渡", name: "昌宏路与雨龙路交叉口", depth: "约 30 cm", duration: "09:20–10:15 断交；11:00 退出", note: "", source: "昆明交警（本地宝）", lat: 24.9898, lng: 102.7612 },
+      { id: "E14", evt: "0818", kind: "closed", n: 14, district: "官渡", name: "二环东路下层 · 昙华寺", depth: "30→20 cm", duration: "10:15 在名单；13:00 退出", note: "", source: "昆明交警 / 澎湃", lat: 25.0472, lng: 102.739 },
+      { id: "E15", evt: "0818", kind: "closed", n: 15, district: "经开", name: "经东路锅炉厂路段", depth: "约 30 cm", duration: "早报断交；10:15 官渡主名单未再列", note: "与交警分时快照不完全同步。", source: "本地宝早报", lat: 25.0042, lng: 102.7724 },
+      { id: "E16", evt: "0818", kind: "closed", n: 16, district: "经开", name: "河岸村涵洞", depth: "约 30 cm", duration: "早报断交；清退时刻不详", note: "", source: "本地宝早报", lat: 25.0062, lng: 102.7816 },
+      { id: "E17", evt: "0818", kind: "closed", n: 17, district: "经开", name: "贵昆路金马村涵洞", depth: "约 40 cm", duration: "早报断交；清退时刻不详", note: "", source: "本地宝早报", lat: 25.0264, lng: 102.7558 },
+      { id: "E18", evt: "0818", kind: "closed", n: 18, district: "经开", name: "云大西路昆玉桥洞", depth: "约 30 cm", duration: "早报断交；清退时刻不详", note: "", source: "本地宝早报", lat: 24.9812, lng: 102.7838 },
+      { id: "E19", evt: "0818", kind: "closed", n: 19, district: "盘龙", name: "景润路 · 花之城路段", depth: "约 30 cm", duration: "早报有；后续主名单以官渡为主", note: "", source: "本地宝早报", lat: 25.0518, lng: 102.7784 },
+      { id: "E20", evt: "0818", kind: "slow", n: 20, district: "官渡", name: "珥季路大澡堂段", depth: "约 15 cm", duration: "09:20–13:00 缓行；17:00 退出", note: "电驴不建议涉水。", source: "昆明交警（本地宝）", lat: 24.9885, lng: 102.7488 },
+      { id: "E21", evt: "0818", kind: "slow", n: 21, district: "盘龙", name: "人民东路与中营路交叉口", depth: "15–20 cm", duration: "早间缓行；13:00 退出", note: "", source: "昆明交警（本地宝）", lat: 25.0516, lng: 102.7438 },
+      { id: "E22", evt: "0818", kind: "slow", n: 22, district: "官渡", name: "云秀路与珥瑞路交叉口", depth: "约 20 cm", duration: "09:20 缓行名单有", note: "", source: "昆明交警（本地宝）", lat: 24.9992, lng: 102.7286 },
+      { id: "E23", evt: "0818", kind: "ctrl", n: 23, district: "机场向", name: "金瓦路 / 虹苏路 / 照青路 / 虹桥立交 / 大树营", depth: "未公开", duration: "机场 07:17 提示管制", note: "建议地铁 6 号线或绕城。", source: "长水机场（澎湃）", lat: 25.048, lng: 102.785 },
+
+      { id: "J1", evt: "0716", kind: "closed", n: "7", district: "官渡", name: "前卫西路与广福路交叉口（十一家具城）", depth: ">50→25 cm", duration: "约 01:00 起淹；08:00 仍在处置、已降至 25 cm（至少约 7 小时）", note: "重度曾断交；前卫雨量站 3 小时 80.9 mm。", source: "昆水管网 / 昆明信息港", lat: 24.9975, lng: 102.6988 },
+      { id: "J2", evt: "0716", kind: "closed", n: "7", district: "官渡", name: "二环东路 · 昆河铁路下穿", depth: ">50 cm", duration: "约 01:00 起；08:00 多数点已处置完毕", note: "重度 6 处之一。", source: "昆水管网 / 昆明信息港", lat: 25.0355, lng: 102.7455 },
+      { id: "J3", evt: "0716", kind: "closed", n: "7", district: "官渡", name: "二环东路 · 金马立交至大树营", depth: ">50 cm", duration: "同场；08:00 基本处置完毕", note: "", source: "昆水管网 / 昆明信息港", lat: 25.038, lng: 102.744 },
+      { id: "J4", evt: "0716", kind: "closed", n: "7", district: "五华一带", name: "滇缅大道 · 海源中路至黄土坡立交西口", depth: ">50 cm", duration: "同场；08:00 基本处置完毕", note: "", source: "昆水管网 / 昆明信息港", lat: 25.0665, lng: 102.668 },
+      { id: "J5", evt: "0716", kind: "closed", n: "7", district: "五华", name: "海源中路 · 滇缅大道至人民西路", depth: ">50 cm", duration: "同场；08:00 基本处置完毕", note: "", source: "昆水管网 / 昆明信息港", lat: 25.055, lng: 102.675 },
+      { id: "J6", evt: "0716", kind: "closed", n: "7", district: "官渡", name: "希望路与广福路交叉口", depth: ">50 cm", duration: "同场；08:00 基本处置完毕", note: "", source: "昆水管网 / 昆明信息港", lat: 24.992, lng: 102.712 },
+      { id: "J7", evt: "0716", kind: "mid", n: "7", district: "官渡", name: "广福路 · 云秀路至昌宏路", depth: "30–50 cm", duration: "同场；08:00 基本处置完毕", note: "中度未断交。", source: "昆水管网 / 昆明信息港", lat: 24.991, lng: 102.748 },
+      { id: "J8", evt: "0716", kind: "mid", n: "7", district: "官渡", name: "昌宏西路林家围段", depth: "30–50 cm", duration: "同场；08:00 基本处置完毕", note: "", source: "昆水管网 / 昆明信息港", lat: 24.996, lng: 102.752 },
+      { id: "J9", evt: "0716", kind: "mid", n: "7", district: "官渡", name: "雨龙路 · 米兰春天", depth: "30–50 cm", duration: "同场；08:00 基本处置完毕", note: "8.18 消防仍赴该片排涝。", source: "昆水管网 / 昆明信息港", lat: 24.988, lng: 102.758 },
+      { id: "J10", evt: "0716", kind: "mid", n: "7", district: "西山", name: "华昌路与采莲路交叉口", depth: "30–50 cm", duration: "同场；08:00 基本处置完毕", note: "永昌片区邻近。", source: "昆水管网 / 昆明信息港", lat: 25.0335, lng: 102.6768 },
+      { id: "J11", evt: "0716", kind: "mid", n: "7", district: "官渡", name: "国贸路与金汁路交叉口", depth: "30–50 cm", duration: "同场；08:00 基本处置完毕", note: "8.18 再次断交。", source: "昆水管网 / 昆明信息港", lat: 25.0164, lng: 102.7378 },
+
+      { id: "A1", evt: "0802", kind: "ctrl", n: "8", district: "呈贡", name: "金桂街靠环湖东路段", depth: "未公开", duration: "凌晨降雨起；连夜排涝后称运行平稳", note: "临时交通管制。", source: "昆明日报", lat: 24.892, lng: 102.821 },
+      { id: "A2", evt: "0802", kind: "ctrl", n: "8", district: "呈贡", name: "兴呈路小古城段", depth: "未公开", duration: "同场", note: "积水影响出行。", source: "昆明日报", lat: 24.905, lng: 102.805 },
+      { id: "A3", evt: "0802", kind: "ctrl", n: "8", district: "呈贡", name: "昆玉路下穿涵洞", depth: "未公开", duration: "同场", note: "临时交通管制；下穿高风险。", source: "昆明日报", lat: 24.912, lng: 102.812 },
+      { id: "A4", evt: "0802", kind: "ctrl", n: "8", district: "官渡", name: "官渡 / 小板桥 / 矣六部分道路", depth: "未公开", duration: "持续性暴雨；无逐点清退时刻", note: "防汛Ⅳ级；矣六另有住户被困转移。", source: "昆明日报", lat: 24.96, lng: 102.78 }
+    ];
+
+    const HIST = [
+      { n: "H1", cat: "tunnel", district: "官渡", name: "牛街庄隧道", depth: "历史最深约 2 m+", note: "下穿贵昆铁路。东白沙河倒灌，逢雨高风险。", lat: 25.0128, lng: 102.7668, r: 220 },
+      { n: "H2", cat: "tunnel", district: "官渡", name: "民航路长润街下穿", depth: "高频易淹", note: "下穿隧道，断交常发。", lat: 25.0221, lng: 102.7362, r: 180 },
+      { n: "H3", cat: "tunnel", district: "官渡", name: "菊华立交下层", depth: "高频易淹", note: "东三环桥下低洼。", lat: 25.0436, lng: 102.7532, r: 200 },
+      { n: "H4", cat: "tunnel", district: "官渡", name: "石虎关立交底层", depth: "高频易淹", note: "东二环桥下。", lat: 25.02311, lng: 102.74229, r: 200 },
+      { n: "H5", cat: "tunnel", district: "官渡", name: "日新立交转盘", depth: "高频易淹", note: "春城路转盘，今年再次约 50 cm。", lat: 25.00518, lng: 102.73142, r: 200 },
+      { n: "H6", cat: "road", district: "官渡", name: "二环东路下层走廊", depth: "30–50 cm 常发", note: "南屏苑、锦都酒店、昙华寺辅道。", lat: 25.033, lng: 102.742, r: 420 },
+      { n: "H7", cat: "road", district: "官渡", name: "二环东路 · 锦都酒店段", depth: "常发", note: "石虎关至南屏苑之间下层。", lat: 25.0278, lng: 102.7408, r: 150 },
+      { n: "H8", cat: "road", district: "官渡", name: "二环东路 · 昙华寺辅道", depth: "常发", note: "昙华寺一侧二环下层。", lat: 25.0472, lng: 102.739, r: 160 },
+      { n: "H9", cat: "road", district: "官渡", name: "国贸路 · 金汁路至官渡广场", depth: "30–50 cm 常发", note: "关上低洼主干道。", lat: 25.0155, lng: 102.74, r: 320 },
+      { n: "H10", cat: "road", district: "官渡", name: "春城路低洼段", depth: "常发", note: "含日新立交一带。", lat: 25.0088, lng: 102.7225, r: 280 },
+      { n: "H11", cat: "road", district: "官渡", name: "东风东路 · 曙光路口", depth: "30–50 cm 常发", note: "昙华灯具市场交叉口。", lat: 25.0408, lng: 102.7356, r: 160 },
+      { n: "H12", cat: "road", district: "官渡", name: "前卫西路 · 广福路口一带", depth: "2026-07-16 重度", note: "十一家具城段；调研确认上个月淹过。", lat: 24.9975, lng: 102.6988, r: 280 },
+      { n: "H13", cat: "river", district: "盘龙", name: "金汁河沿线 · 东华小区", depth: "楼栋低洼", note: "河道沿线老旧小区。", lat: 25.0495, lng: 102.7298, r: 240 },
+      { n: "H14", cat: "river", district: "盘龙", name: "金汁河沿线 · 新迎小区", depth: "楼栋低洼", note: "部分低洼楼栋易进水。", lat: 25.0548, lng: 102.7365, r: 260 },
+      { n: "H15", cat: "river", district: "盘龙", name: "盘龙江沿岸 · 豆腐营", depth: "老社区", note: "盘龙江沿岸老社区。", lat: 25.0475, lng: 102.717, r: 250 },
+      { n: "H16", cat: "river", district: "盘龙", name: "盘龙江沿岸 · 凤凰村", depth: "老社区", note: "盘龙江东、白塔一带。", lat: 25.0412, lng: 102.7215, r: 250 },
+      { n: "H17", cat: "river", district: "西山", name: "永昌片区", depth: "历史最深 1.1 m", note: "地势低洼 + 采莲河行洪不足。2026 用户「泷川泽」亦反馈云纺对面永昌小区整片爱淹、约小腿深（见 H27）。", lat: 25.0335, lng: 102.6768, r: 480 },
+      { n: "H18", cat: "new", district: "官渡", name: "珥季路大澡堂段", depth: "城郊结合部", note: "短时暴雨易积。", lat: 24.9885, lng: 102.7488, r: 180 },
+      { n: "H19", cat: "new", district: "官渡", name: "彩云北路 × 广福路 / 昌宏路", depth: "交叉口低洼", note: "彩云北路南段交叉带。", lat: 24.991, lng: 102.748, r: 380 },
+      { n: "H20", cat: "new", district: "安宁", name: "太平新城 · 万辉星城", depth: "车辆被困纪录", note: "在安宁，不在主城东边。", lat: 24.9512, lng: 102.5455, r: 350 },
+      { n: "H21", cat: "new", district: "安宁", name: "玉龙湾隧道", depth: "车辆被困纪录", note: "安宁玉龙湾方向。", lat: 24.965, lng: 102.528, r: 220 },
+      /* —— 小红书用户反馈 · 已交叉核实 —— */
+      { n: "H22", cat: "ugc", district: "五华高新", name: "金泰国际一带", depth: "用户：非常容易淹", note: "反馈人「芸照在云南」。楼盘在黄土坡立交旁滇缅大道×西二环。官方雨污分流改造名单含金泰国际；同片滇缅大道 2026-07-16 曾 >50cm 断交。坐标为小区近似点。", lat: 25.0705, lng: 102.6695, r: 280 },
+      { n: "H23", cat: "ugc", district: "五华高新", name: "戛纳小镇一带", depth: "用户：非常容易淹", note: "反馈人「芸照在云南」。海源中路 1629 号一带。高新西区雨污分流改造名单含戛纳小镇；海源北路–海源中路有淹水点改造工程。", lat: 25.062, lng: 102.678, r: 280 },
+      { n: "H24", cat: "ugc", district: "五华高新", name: "海源北路", depth: "用户：易淹", note: "反馈人「芸照在云南」。公开报道多次写海源北路至海源中路雨季淹水及下穿昆石铁路排水改造。", lat: 25.076, lng: 102.671, r: 320 },
+      { n: "H25", cat: "ugc", district: "五华高新", name: "上高架路口（黄土坡立交向）", depth: "用户：非常容易淹", note: "反馈人「芸照在云南」指西边上高架路口。结合金泰/戛纳区位，按黄土坡立交/滇缅大道上桥一带落点；具体岔口名待用户再确认。", lat: 25.068, lng: 102.667, r: 220 },
+      { n: "H26", cat: "safe", district: "西山", name: "万达双塔片 · 天序/凤起/天耀/复地/邦泰", depth: "用户：本次未淹", note: "反馈人「Josie」：万达这边上述楼盘未淹，感觉地势较高。核实为希望路–日新东路–前兴路万达双塔商圈。近三年公开新闻几乎未点名该片积水；勿标成易淹点。", lat: 25.0145, lng: 102.698, r: 450 },
+      { n: "H27", cat: "ugc", district: "西山", name: "云纺对面 · 永昌小区一带", depth: "用户：小腿深，整片爱淹", note: "反馈人「泷川泽」：云纺对面永昌小区一整片非常爱淹；其标注的几条街均见淹过、约小腿深。与历史永昌片区（H17）重叠；采莲河沿线低洼。坐标为片区中心近似。", lat: 25.0328, lng: 102.6755, r: 420 }
+    ];
+
+    const CAT = {
+      tunnel: "下穿立交",
+      road: "低洼路",
+      river: "河道老区",
+      new: "城郊新区",
+      ugc: "用户补点",
+      safe: "相对未淹"
+    };
+    const HIST_PIN = { tunnel: "hist", road: "hist", river: "hist", new: "hist", ugc: "ugc", safe: "safe" };
+    const HIST_RING = { tunnel: "#1d4ed8", road: "#1d4ed8", river: "#1d4ed8", new: "#1d4ed8", ugc: "#0f766e", safe: "#15803d" };
+
+    /* 报告条形图 */
+    (function paintBars() {
+      const districts = [
+        ["官渡", 25], ["经开", 5], ["呈贡", 3], ["五华", 2], ["盘龙", 2], ["西山", 1], ["机场向", 1]
+      ];
+      const morph = [
+        ["主干道低洼/交叉口", 18, true], ["下穿/立交底层", 14, true], ["涵洞/桥洞", 5, false], ["缓行/浅积", 3, false]
+      ];
+      const maxD = Math.max(...districts.map((d) => d[1]));
+      const maxM = Math.max(...morph.map((d) => d[1]));
+      document.getElementById("district-bars").innerHTML = districts.map(([name, n]) =>
+        `<div class="bar-row"><span>${name}</span><div class="bar-track"><div class="bar-fill" style="width:${(n / maxD) * 100}%"></div></div><span>${n}</span></div>`
+      ).join("");
+      document.getElementById("morph-bars").innerHTML = morph.map(([name, n, hot]) =>
+        `<div class="bar-row wide"><span>${name}</span><div class="bar-track"><div class="bar-fill${hot ? "" : " blue"}" style="width:${(n / maxM) * 100}%"></div></div><span>${n}</span></div>`
+      ).join("");
+    })();
+
+    const map = L.map("map", { zoomControl: true }).setView(toMapLL(25.02, 102.74), 12);
+    L.tileLayer("https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}", {
+      subdomains: "1234",
+      maxZoom: 18,
+      attribution: "高德底图 · 数据来自公开通报整理，非实时官方图层"
+    }).addTo(map);
+
+    function pinIcon(text, cls) {
+      return L.divIcon({
+        className: "pin-wrap",
+        html: `<div class="pin ${cls}"><span>${text}</span></div>`,
+        iconSize: [44, 44],
+        iconAnchor: [22, 40],
+        popupAnchor: [0, -36]
+      });
+    }
+    function popupHtml(title, lines, latlng) {
+      const [lat, lng] = latlng;
+      return `<div class="popup"><h3>${title}</h3>${lines.map((t) => `<p>${t}</p>`).join("")}<p><a href="https://uri.amap.com/marker?position=${lng},${lat}&name=${encodeURIComponent(title)}" target="_blank" rel="noopener">用高德打开这一点</a></p></div>`;
+    }
+
+    const evtLayer = {};
+    EVENTS.forEach((p, i) => {
+      const ll = toMapLL(p.lat, p.lng);
+      const label = String(typeof p.n === "number" ? p.n : i + 1);
+      const marker = L.marker(ll, { icon: pinIcon(label, PIN_CLASS[p.kind]), zIndexOffset: 600 });
+      marker.bindPopup(popupHtml(p.name, [
+        `${EVT_LABEL[p.evt]} · ${KIND_LABEL[p.kind]} · ${p.district}`,
+        `水深：${p.depth}`,
+        `持续：${p.duration}`,
+        p.note || "",
+        `来源：${p.source}`
+      ].filter(Boolean), [ll[0], ll[1]]));
+      const ring = L.circle(ll, {
+        radius: 110,
+        color: RING[p.kind],
+        weight: 3,
+        fillColor: RING[p.kind],
+        fillOpacity: 0.14
+      });
+      evtLayer[p.id] = L.layerGroup([ring, marker]).addTo(map);
+      p._marker = marker;
+      p._ll = ll;
+      p._label = label;
+    });
+
+    const histLayer = {};
+    HIST.forEach((p) => {
+      const ll = toMapLL(p.lat, p.lng);
+      const ringColor = HIST_RING[p.cat] || "#1d4ed8";
+      const zone = L.circle(ll, {
+        radius: p.r,
+        color: ringColor,
+        weight: 3,
+        dashArray: p.cat === "safe" ? "2 8" : "6 6",
+        fillColor: ringColor,
+        fillOpacity: p.cat === "safe" ? 0.08 : 0.12
+      });
+      const pinCls = HIST_PIN[p.cat] || "hist";
+      const marker = L.marker(ll, { icon: pinIcon(p.n.replace("H", ""), pinCls), zIndexOffset: 200 });
+      marker.bindPopup(popupHtml(p.name, [
+        `${CAT[p.cat]} · ${p.district}`,
+        p.depth,
+        p.note
+      ], [ll[0], ll[1]]));
+      histLayer[p.n] = L.layerGroup([zone, marker]);
+      p._marker = marker;
+      p._ll = ll;
+      p._pinCls = pinCls;
+    });
+
+    let evtF = "all", kindF = "all", histF = "all", qEvt = "", qHist = "", currentView = "all";
+    const isHistView = () => currentView === "hist";
+
+    function showEvt(p) {
+      if (isHistView()) return false;
+      return (evtF === "all" || p.evt === evtF)
+        && (kindF === "all" || p.kind === kindF)
+        && (!qEvt || (p.name + p.district + p.note + p.source + p.duration + p.depth).includes(qEvt));
+    }
+    function showHist(p) {
+      if (!isHistView()) return false;
+      return (histF === "all" || p.cat === histF)
+        && (!qHist || (p.name + p.district + p.note + CAT[p.cat]).includes(qHist));
+    }
+
+    function updatePeriodCopy() {
+      if (isHistView()) return;
+      const meta = PERIOD[evtF] || PERIOD.all;
+      document.getElementById("evt-title").textContent = meta.title;
+      document.getElementById("evt-sub").textContent = meta.sub;
+      document.getElementById("period-banner").innerHTML = meta.banner;
+    }
+
+    function fitVisible(pad) {
+      const pts = isHistView()
+        ? HIST.filter(showHist).map((p) => p._ll)
+        : EVENTS.filter(showEvt).map((p) => p._ll);
+      if (!pts.length) return;
+      let maxZoom = 12;
+      if (isHistView()) maxZoom = 11;
+      else if (evtF === "0802") maxZoom = 12;
+      else if (evtF === "0716") maxZoom = 12;
+      else maxZoom = 13;
+      map.flyToBounds(pts, { padding: pad || [48, 48], maxZoom, duration: 0.55 });
+    }
+
+    function isMobile() {
+      return window.matchMedia("(max-width: 960px)").matches;
+    }
+    function setSheetOpen(open) {
+      const boards = document.getElementById("boards");
+      const btn = document.getElementById("sheet-toggle");
+      if (!boards || !btn) return;
+      boards.classList.toggle("open", open);
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      updateSheetLabel();
+      setTimeout(() => map.invalidateSize(), 300);
+    }
+    function updateSheetLabel() {
+      const label = document.getElementById("sheet-label");
+      if (!label) return;
+      const n = isHistView()
+        ? HIST.filter(showHist).length
+        : EVENTS.filter(showEvt).length;
+      const title = isHistView() ? "常年易淹" : "点位列表";
+      const open = document.getElementById("boards")?.classList.contains("open");
+      label.textContent = open ? `${title} · ${n} 处 · 点击收起` : `${title} · ${n} 处 · 点击展开`;
+    }
+
+    function render() {
+      updatePeriodCopy();
+      const box = document.getElementById("list-evt");
+      box.innerHTML = "";
+      EVENTS.forEach((p) => {
+        const on = showEvt(p);
+        if (on) map.addLayer(evtLayer[p.id]); else map.removeLayer(evtLayer[p.id]);
+        if (!on) return;
+        const el = document.createElement("div");
+        el.className = "item";
+        el.innerHTML = `<span class="badge ${p.kind}">${p._label}</span><div><h3>${p.name}</h3><p>${EVT_LABEL[p.evt]} · ${p.district} · ${KIND_LABEL[p.kind]} · ${p.duration}</p></div><div class="meta ${p.kind}">${p.depth}</div>`;
+        el.onclick = () => {
+          if (isMobile()) setSheetOpen(false);
+          map.flyTo(p._ll, p.district === "呈贡" || p.district === "安宁" ? 14 : 15, { duration: 0.45 });
+          setTimeout(() => p._marker.openPopup(), isMobile() ? 280 : 0);
+        };
+        box.appendChild(el);
+      });
+
+      const hBox = document.getElementById("list-hist");
+      hBox.innerHTML = "";
+      HIST.forEach((p) => {
+        const on = showHist(p);
+        if (on) map.addLayer(histLayer[p.n]); else map.removeLayer(histLayer[p.n]);
+        if (!on) return;
+        const el = document.createElement("div");
+        el.className = "item";
+        const badgeCls = p.cat === "ugc" ? "badge ugc" : p.cat === "safe" ? "badge safe" : "badge sq";
+        const badgeInner = p.cat === "ugc" || p.cat === "safe"
+          ? p.n.replace("H", "")
+          : `<span>${p.n.replace("H", "")}</span>`;
+        el.innerHTML = `<span class="${badgeCls}">${badgeInner}</span><div><h3>${p.name}</h3><p>${p.district} · ${CAT[p.cat]} · ${p.note}</p></div><div class="meta ${p.cat === "ugc" || p.cat === "safe" ? p.cat : ""}">${p.depth}</div>`;
+        el.onclick = () => {
+          if (isMobile()) setSheetOpen(false);
+          map.flyTo(p._ll, p.district === "安宁" ? 14 : 15, { duration: 0.45 });
+          setTimeout(() => p._marker.openPopup(), isMobile() ? 280 : 0);
+        };
+        hBox.appendChild(el);
+      });
+      updateSheetLabel();
+    }
+
+    function setView(view, { fit = true } = {}) {
+      currentView = view;
+      const isReport = view === "report";
+      const histMode = view === "hist";
+
+      document.getElementById("view-map").classList.toggle("hidden", isReport);
+      document.getElementById("view-report").classList.toggle("hidden", !isReport);
+      document.getElementById("map-tools").classList.toggle("hidden", isReport);
+      document.getElementById("legend").classList.toggle("hidden", isReport);
+
+      document.querySelectorAll(".topnav [data-view]").forEach((b) => {
+        b.classList.toggle("on", b.dataset.view === view);
+      });
+
+      if (isReport) return;
+
+      document.getElementById("panel-evt").classList.toggle("show", !histMode);
+      document.getElementById("panel-hist").classList.toggle("show", histMode);
+      document.getElementById("legend-evt").classList.toggle("hidden", histMode);
+      document.getElementById("legend-hist").classList.toggle("hidden", !histMode);
+
+      if (!histMode) evtF = view;
+      if (isMobile()) setSheetOpen(false);
+      render();
+      requestAnimationFrame(() => {
+        map.invalidateSize();
+        if (fit) fitVisible();
+      });
+    }
+
+    document.getElementById("sheet-toggle").onclick = () => {
+      const boards = document.getElementById("boards");
+      setSheetOpen(!boards.classList.contains("open"));
+    };
+    window.addEventListener("resize", () => {
+      map.invalidateSize();
+      updateSheetLabel();
+    });
+
+    document.querySelectorAll(".topnav [data-view]").forEach((btn) => {
+      btn.onclick = () => setView(btn.dataset.view);
+    });
+    document.querySelectorAll(".jump-map").forEach((btn) => {
+      btn.onclick = () => setView(btn.dataset.jump);
+    });
+    document.querySelectorAll("[data-kind]").forEach((btn) => {
+      btn.onclick = () => {
+        kindF = btn.dataset.kind;
+        document.querySelectorAll("[data-kind]").forEach((b) => b.classList.toggle("on", b === btn));
+        render();
+      };
+    });
+    document.querySelectorAll("[data-hist]").forEach((btn) => {
+      btn.onclick = () => {
+        histF = btn.dataset.hist;
+        document.querySelectorAll("[data-hist]").forEach((b) => b.classList.toggle("on", b === btn));
+        render();
+      };
+    });
+    document.getElementById("q-evt").addEventListener("input", (e) => { qEvt = e.target.value.trim(); render(); });
+    document.getElementById("q-hist").addEventListener("input", (e) => { qHist = e.target.value.trim(); render(); });
+    document.getElementById("btn-locate").onclick = () => {
+      navigator.geolocation.getCurrentPosition((pos) => {
+        const ll = toMapLL(pos.coords.latitude, pos.coords.longitude, "wgs");
+        L.circleMarker(ll, { radius: 8, color: "#fff", weight: 2, fillColor: "#b42318", fillOpacity: 1 }).addTo(map).bindPopup("你大概在这里").openPopup();
+        map.flyTo(ll, 15);
+      });
+    };
+    document.getElementById("btn-fit").onclick = () => fitVisible([40, 40]);
+
+    setView("all", { fit: false });
+  </script>
+</body>
+</html>

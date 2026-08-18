@@ -1,0 +1,16 @@
+# Secrets / keys
+4h8g.pem
+*.pem
+!.ssh/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Local only
+deploy/
+Snipaste_*.png
+*.log

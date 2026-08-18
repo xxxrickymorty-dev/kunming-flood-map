@@ -1,0 +1,10 @@
+﻿# 昆明积水地图 - 静态站点（宿主机 :8088 → 容器 :80）
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8088:80"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./html:/usr/share/nginx/html:ro
+    restart: unless-stopped
