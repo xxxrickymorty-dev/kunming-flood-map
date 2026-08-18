@@ -28,16 +28,16 @@ window.FLOOD_DATA = {
     { id: "E22", evt: "0818", kind: "slow", morph: "slow", n: 22, district: "官渡", name: "云秀路与珥瑞路交叉口", depth: "约 20 cm", duration: "09:20 缓行名单有", note: "", source: "昆明交警（本地宝）", lat: 24.9992, lng: 102.7286 },
     { id: "E23", evt: "0818", kind: "ctrl", morph: "road", n: 23, district: "官渡", name: "金瓦路 / 虹苏路 / 照青路 / 虹桥立交 / 大树营（机场向）", depth: "未公开", duration: "机场 07:17 提示管制", note: "长水机场出城走廊；行政区属官渡（原「机场向」已并入）。建议地铁 6 号线或绕城。", source: "长水机场（澎湃）", lat: 25.048, lng: 102.785 },
 
-    { id: "J1", evt: "0716", kind: "closed", morph: "road", n: "7", district: "西山", name: "前卫西路与广福路交叉口（十一家具城）", depth: ">50→25 cm", duration: "约 01:00 起淹；08:00 仍在处置、已降至 25 cm（至少约 7 小时）", note: "重度曾断交；前卫雨量站 3 小时 80.9 mm。十一家具城即奥宸财富广场旁（省公安厅侧），用户确认该路口大雨必淹。", source: "昆水管网 / 昆明信息港", lat: 24.9875, lng: 102.6899 },
+    { id: "J1", evt: "0716", kind: "closed", morph: "road", n: "7", district: "西山", name: "前卫西路与广福路交叉口（十一家具城）", depth: ">50→25 cm", duration: "约 01:00 起淹；08:00 仍在处置、已降至 25 cm（至少约 7 小时）", note: "重度曾断交；前卫雨量站 3 小时 80.9 mm。十一家具城即奥宸财富广场（广福路×前卫西路，省公安厅旁），用户确认该路口大雨必淹。", source: "昆水管网 / 昆明信息港", lat: 24.9866, lng: 102.6893 },
     { id: "J2", evt: "0716", kind: "closed", morph: "tunnel", n: "7", district: "官渡", name: "二环东路 · 昆河铁路下穿", depth: ">50 cm", duration: "约 01:00 起；08:00 多数点已处置完毕", note: "重度 6 处之一。", source: "昆水管网 / 昆明信息港", lat: 25.0355, lng: 102.7455 },
     { id: "J3", evt: "0716", kind: "closed", morph: "tunnel", n: "7", district: "官渡", name: "二环东路 · 金马立交至大树营", depth: ">50 cm", duration: "同场；08:00 基本处置完毕", note: "", source: "昆水管网 / 昆明信息港", lat: 25.038, lng: 102.744 },
     { id: "J4", evt: "0716", kind: "closed", morph: "road", n: "7", district: "五华", name: "滇缅大道 · 海源中路至黄土坡立交西口", depth: ">50 cm", duration: "同场；08:00 基本处置完毕", note: "", source: "昆水管网 / 昆明信息港", lat: 25.0665, lng: 102.668 },
     { id: "J5", evt: "0716", kind: "closed", morph: "road", n: "7", district: "五华", name: "海源中路 · 滇缅大道至人民西路", depth: ">50 cm", duration: "同场；08:00 基本处置完毕", note: "", source: "昆水管网 / 昆明信息港", lat: 25.055, lng: 102.675 },
-    { id: "J6", evt: "0716", kind: "closed", morph: "road", n: "7", district: "西山", name: "希望路与广福路交叉口", depth: ">50 cm", duration: "同场；08:00 基本处置完毕", note: "", source: "昆水管网 / 昆明信息港", lat: 24.992, lng: 102.712 },
+    { id: "J6", evt: "0716", kind: "closed", morph: "road", n: "7", district: "西山", name: "希望路与广福路交叉口", depth: ">50 cm", duration: "同场；08:00 基本处置完毕", note: "", source: "昆水管网 / 昆明信息港", lat: 24.9876, lng: 102.7125 },
     { id: "J7", evt: "0716", kind: "mid", morph: "road", n: "7", district: "官渡", name: "广福路 · 云秀路至昌宏路", depth: "30–50 cm", duration: "同场；08:00 基本处置完毕", note: "中度未断交。", source: "昆水管网 / 昆明信息港", lat: 24.991, lng: 102.748 },
     { id: "J8", evt: "0716", kind: "mid", morph: "road", n: "7", district: "官渡", name: "昌宏西路林家围段", depth: "30–50 cm", duration: "同场；08:00 基本处置完毕", note: "", source: "昆水管网 / 昆明信息港", lat: 24.996, lng: 102.752 },
     { id: "J9", evt: "0716", kind: "mid", morph: "road", n: "7", district: "官渡", name: "雨龙路 · 米兰春天", depth: "30–50 cm", duration: "同场；08:00 基本处置完毕", note: "8.18 消防仍赴该片排涝。", source: "昆水管网 / 昆明信息港", lat: 24.988, lng: 102.758 },
-    { id: "J10", evt: "0716", kind: "mid", morph: "road", n: "7", district: "西山", name: "华昌路与采莲路交叉口", depth: "30–50 cm", duration: "同场；08:00 基本处置完毕", note: "永昌片（环城南路南、华昌路侧）路口；采莲河沿线低洼。", source: "昆水管网 / 昆明信息港", lat: 25.0166, lng: 102.7049 },
+    { id: "J10", evt: "0716", kind: "mid", morph: "road", n: "7", district: "西山", name: "华昌路与采莲路交叉口", depth: "30–50 cm", duration: "同场；08:00 基本处置完毕", note: "永昌片（环城南路南、华昌路侧）路口；采莲河沿线低洼。", source: "昆水管网 / 昆明信息港", lat: 25.0156, lng: 102.7049 },
     { id: "J11", evt: "0716", kind: "mid", morph: "road", n: "7", district: "官渡", name: "国贸路与金汁路交叉口", depth: "30–50 cm", duration: "同场；08:00 基本处置完毕", note: "8.18 再次断交。", source: "昆水管网 / 昆明信息港", lat: 25.0164, lng: 102.7378 },
 
     { id: "A1", evt: "0802", kind: "ctrl", morph: "road", n: "8", district: "呈贡", name: "金桂街靠环湖东路段", depth: "未公开", duration: "凌晨降雨起；连夜排涝后称运行平稳", note: "临时交通管制。", source: "昆明日报", lat: 24.9015, lng: 102.7915 },
@@ -62,9 +62,9 @@ window.FLOOD_DATA = {
     { n: "H12", cat: "road", district: "西山", name: "前卫西路 · 广福路口一带", depth: "2026-07-16 重度", note: "十一家具城段；调研确认上个月淹过。", ref: "J1", r: 280 },
     { n: "H13", cat: "river", district: "盘龙", name: "金汁河沿线 · 东华小区", depth: "楼栋低洼", note: "河道沿线老旧小区。", lat: 25.0495, lng: 102.7298, r: 240 },
     { n: "H14", cat: "river", district: "盘龙", name: "金汁河沿线 · 新迎小区", depth: "楼栋低洼", note: "部分低洼楼栋易进水。", lat: 25.0548, lng: 102.7365, r: 260 },
-    { n: "H15", cat: "river", district: "西山", name: "豆腐营（海埂路一带）", depth: "老社区", note: "环城南路南侧、海埂路/云兴路一带老社区，采莲河沿线低洼。", lat: 25.0195, lng: 102.7079, r: 250 },
+    { n: "H15", cat: "river", district: "西山", name: "豆腐营（海埂路一带）", depth: "老社区", note: "环城南路南侧、海埂路/云兴路一带老社区，采莲河沿线低洼。", lat: 25.0174, lng: 102.7072, r: 250 },
     { n: "H16", cat: "river", district: "盘龙", name: "盘龙江沿岸 · 凤凰村", depth: "老社区", note: "盘龙江东、白塔一带。", lat: 25.0412, lng: 102.7215, r: 250 },
-    { n: "H17", cat: "river", district: "西山", name: "永昌片区", depth: "历史最深 1.1 m", note: "环城南路816号一带（五华体育馆东、云纺西）。地势低洼 + 采莲河行洪不足；与用户补点永昌小区同址。", lat: 25.02, lng: 102.7029, r: 380 },
+    { n: "H17", cat: "river", district: "西山", name: "永昌片区", depth: "历史最深 1.1 m", note: "环城南路816号一带（五华体育馆东、云纺西）。地势低洼 + 采莲河行洪不足；与用户补点永昌小区同址。", lat: 25.0172, lng: 102.7056, r: 380 },
     { n: "H18", cat: "new", district: "官渡", name: "珥季路大澡堂段", depth: "城郊结合部", note: "短时暴雨易积。", ref: "E20", r: 180 },
     { n: "H19", cat: "new", district: "官渡", name: "彩云北路 × 广福路 / 昌宏路", depth: "交叉口低洼", note: "彩云北路南段交叉带。", lat: 24.991, lng: 102.748, r: 380 },
     { n: "H20", cat: "new", district: "安宁", name: "太平新城 · 万辉星城", depth: "车辆被困纪录", note: "在安宁，不在主城东边。", lat: 24.9512, lng: 102.5455, r: 350 },
@@ -75,7 +75,7 @@ window.FLOOD_DATA = {
     { n: "H24", cat: "ugc", district: "五华高新", name: "海源北路", depth: "用户：易淹", note: "公开报道多次写海源北路至海源中路雨季淹水及下穿昆石铁路排水改造。", lat: 25.0749, lng: 102.6543, r: 320 },
     { n: "H25", cat: "ugc", district: "五华高新", name: "上高架路口（黄土坡立交向）", depth: "用户：非常容易淹", note: "西边上高架路口。按黄土坡立交/滇缅大道上桥一带落点；具体岔口名待再确认。", lat: 25.068, lng: 102.667, r: 220 },
     { n: "H26", cat: "ugc", district: "官渡", name: "万象城 · 环城南路一带", depth: "用户：路面积水深（配图）", note: "公开笔记配图可见主干道深积水、消防车涉水；落点取官渡环城南路万象城商圈（地铁岔街站一带）。不等于商场室内进水。", lat: 25.0292, lng: 102.7337, r: 320 },
-    { n: "H27", cat: "ugc", district: "西山", name: "永昌小区（环城南路816号）", depth: "用户：小腿深，整片爱淹", note: "环城南路南侧、五华体育馆东、华昌路—云兴路一带；云纺商圈对面。与历史永昌片区、华昌×采莲同片低洼。", lat: 25.0205, lng: 102.7034, r: 280 },
+    { n: "H27", cat: "ugc", district: "西山", name: "永昌小区（环城南路816号）", depth: "用户：小腿深，整片爱淹", note: "环城南路南侧、五华体育馆东、华昌路—云兴路一带；云纺商圈对面。与历史永昌片区、华昌×采莲同片低洼。", lat: 25.0172, lng: 102.7056, r: 280 },
     { n: "H28", cat: "ugc", district: "五华", name: "龙泉路 · 红云 / 高教小区一带", depth: "用户：深水路况照片；历史断交", note: "龙泉路红云片为长虫山山洪下泄区；龙泉路高教小区/昆八中段有断交通报、常年淹水改造记录。坐标取龙泉路昆八中段近似。", lat: 25.0944, lng: 102.7199, r: 380 }
   ]
 };
