@@ -575,6 +575,88 @@ table.data tr.zero td { color: #6b6258; background: #faf7f0; }
 .district-card.hot .num { color: #b42318; }
 .district-card .split { font-size: 12px; color: var(--muted); }
 .district-card .go { font-size: 12px; color: #0f766e; margin-top: 8px; }
+.district-card .tagline {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #7c2d12;
+  margin-top: 6px;
+}
+.district-card.hot .tagline { color: #9a3412; }
+.tier-board-wrap {
+  margin: 0 0 22px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fffdf8;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+}
+.tier-board-title {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.tier-board-sub { margin: 0 0 12px; }
+.tier-board {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tier-row {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  min-height: 52px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+.tier-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  padding: 8px 4px;
+}
+.tier-items {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #ececec;
+  min-height: 52px;
+}
+.tier-chip {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-weight: 650;
+  font-family: inherit;
+  cursor: pointer;
+  background: #fff;
+  color: var(--ink);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.tier-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+.tier-chip .n { font-size: 11px; opacity: 0.72; margin-left: 4px; font-weight: 600; }
+.tier-row.tier-hang .tier-label { background: #e63946; color: #fff; }
+.tier-row.tier-top .tier-label { background: #f4a261; color: #fff; }
+.tier-row.tier-elite .tier-label { background: #ffd60a; color: #1a1a1a; }
+.tier-row.tier-npc .tier-label { background: #fefae0; color: #5c4a00; }
+.tier-row.tier-bottom .tier-label { background: #fff; color: #666; }
+.tier-row.tier-bottom .tier-items { background: #f5f5f5; }
+.tier-empty {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 2px 4px;
+}
 .callout {
   background: #fff7ed;
   border: 1px solid #f0d9b8;
@@ -635,6 +717,18 @@ table.data tr.zero td { color: #6b6258; background: #faf7f0; }
   border-radius: 4px;
 }
 .bar-fill.blue { background: var(--hist); }
+.corridor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 28px;
+  margin: 12px 0 8px;
+}
+.corridor-grid .corridor {
+  height: 100%;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.corridor-grid .corridor:nth-last-child(-n+2) { border-bottom: 0; }
 .corridor {
   padding: 14px 0;
   border-bottom: 1px solid var(--line);
@@ -923,6 +1017,12 @@ table.catalog .amap {
   .report h1 { font-size: 22px; }
   .district-board { grid-template-columns: 1fr 1fr; }
   .two-col { grid-template-columns: 1fr; }
+  .corridor-grid { grid-template-columns: 1fr; }
+  .corridor-grid .corridor:nth-last-child(-n+2) { border-bottom: 1px solid var(--line); }
+  .corridor-grid .corridor:last-child { border-bottom: 0; }
+  .tier-row { grid-template-columns: 56px 1fr; min-height: 46px; }
+  .tier-label { font-size: 15px; }
+  .tier-items { min-height: 46px; padding: 6px 8px; }
   table.data { font-size: 12px; display: block; overflow-x: auto; }
 }
 

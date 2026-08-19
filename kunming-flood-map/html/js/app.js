@@ -681,23 +681,69 @@ function paintMorphBars() {
   });
 }
 
+function paintDistrictTierList(ev, hi) {
+  const el = document.getElementById("district-tier-list");
+  if (!el) return;
+  const total = (k) => (ev[k] || 0) + (hi[k] || 0);
+  const tiers = [
+    { cls: "tier-hang", label: "夯", keys: ["官渡"] },
+    { cls: "tier-top", label: "顶级", keys: [] },
+    { cls: "tier-elite", label: "人上人", keys: [] },
+    { cls: "tier-npc", label: "NPC", keys: [] },
+    { cls: "tier-bottom", label: "拉完了", keys: [] }
+  ];
+  const ranked = DISTRICTS.filter((k) => k !== "官渡" && total(k) > 0)
+    .sort((a, b) => total(b) - total(a) || ev[b] - ev[a]);
+  if (ranked[0]) tiers[1].keys.push(ranked[0]);
+  if (ranked[1]) tiers[1].keys.push(ranked[1]);
+  if (ranked[2]) tiers[2].keys.push(ranked[2]);
+  if (ranked[3]) tiers[2].keys.push(ranked[3]);
+  ranked.slice(4).forEach((k) => tiers[3].keys.push(k));
+  DISTRICTS.filter((k) => total(k) === 0).forEach((k) => tiers[4].keys.push(k));
+  el.innerHTML = tiers.map((t) => {
+    const items = t.keys.map((k) => {
+      const a = ADMIN_BY_KEY[k];
+      const n = total(k);
+      const name = a ? a.full : k;
+      const jump = n > 0 ? ` data-jump="d-${esc(k)}"` : "";
+      const count = n > 0 ? `<span class="n">${n}</span>` : "";
+      return `<button type="button" class="tier-chip"${jump}>${esc(name)}${count}</button>`;
+    }).join("");
+    return `<div class="tier-row ${t.cls}">`
+      + `<div class="tier-label">${esc(t.label)}</div>`
+      + `<div class="tier-items">${items || '<span class="tier-empty">（本档暂空）</span>'}</div>`
+      + `</div>`;
+  }).join("");
+}
+
 function refreshDistrictStats() {
   const ev = {}, hi = {};
   DISTRICTS.forEach((k) => { ev[k] = 0; hi[k] = 0; });
   EVENTS.forEach((p) => { const k = districtKey(p.district); if (ev[k] != null) ev[k]++; });
   HIST.forEach((p) => { const k = districtKey(p.district); if (hi[k] != null) hi[k]++; });
   const shown = DISTRICTS.filter((k) => ev[k] + hi[k] > 0);
+  paintDistrictTierList(ev, hi);
+  const taglines = {
+    官渡: "一骑绝尘 · 水城威尼斯",
+    呈贡: "水深保密 · 管制不保密",
+    五华: "海源–滇缅三进宫",
+    盘龙: "名单隐身 · 河道不隐身",
+    西山: "十一家具 · 大雨必淹",
+    安宁: "皮划艇摆渡 442 人"
+  };
   const board = document.getElementById("district-board");
   if (board) {
     board.innerHTML = shown.map((k) => {
       const a = ADMIN_BY_KEY[k];
       const total = ev[k] + hi[k];
       const hot = k === "官渡" ? " hot" : "";
+      const tag = taglines[k] ? `<span class="tagline">${esc(taglines[k])}</span>` : "";
       return `<button type="button" class="district-card${hot}" data-jump="d-${esc(k)}">`
         + `<span class="name">${esc(a.full)}</span>`
         + `<span class="code">${esc(a.code)} · ${esc(a.units)}</span>`
         + `<span class="num">${total}</span>`
         + `<span class="split">事件 ${ev[k]} · 图层 ${hi[k]}</span>`
+        + tag
         + `<span class="go">打开分图 →</span>`
         + `</button>`;
     }).join("");
@@ -705,12 +751,12 @@ function refreshDistrictStats() {
   const tbl = document.getElementById("district-table-body");
   if (tbl) {
     const notes = {
-      官渡: "六场均有点；东二环、国贸、牛街庄、广福南片集中。7.27 古镇云秀路、8.10 管网、8.18 消防排涝亦在本区。金马（菊华/大树营）、吴井（万象城）、长水机场属本区。早报「经开」涵洞 4 处已并入。",
-      呈贡: "8.2–3 临时管制为主；水深公开不足",
-      五华: "海源–滇缅跨 7.16 / 7.17 / 8.10；用户补点（金泰/戛纳/海源北/龙泉路；高新功能区并入本区）",
-      盘龙: "道路名单少；金汁河/盘龙江沿岸老社区在常年层",
-      西山: "华昌×采莲、永昌/云纺、豆腐营低洼带；前卫西路×广福路（十一家具城）7.16 重度；7.17 团结公路（小河村–龙坪坝）",
-      安宁: "7.17 官方点名太平新城（万辉/玉龙湾/昆海湖），摆渡 442 人"
+      官渡: "让我们恭喜官渡区一骑绝尘，拿下「水城威尼斯」称号。六场暴雨场场有戏，东二环到广福南片，针密得像筛子。7.27 古镇、8.10 管网、8.18 消防/小红书补点亦在本区。金马、吴井、长水机场属本区；早报「经开」涵洞已并入。",
+      呈贡: "新区也要交进城学费：8.2–3 临时管制为主，水深公开不足，但名单从不缺席。",
+      五华: "海源–滇缅跨 7.16 / 7.17 / 8.10 三进宫；黄土坡立交是常年 C 位。高新并入后，用户补点比部分官方还勤快。",
+      盘龙: "交警名单里存在感偏低，金汁河/盘龙江老社区在蓝色图层里默默发光；青龙村 8.18 用户视频补点。",
+      西山: "十一家具城：用户与官方一致认为「大雨必淹」。7.17 团结公路在山上淹，不在滇池里淹（已改正）。",
+      安宁: "7.17 太平新城官方点名，皮划艇摆渡 442 人——主城看积水，安宁看渡船。"
     };
     tbl.innerHTML = ADMIN.filter((a) => ev[a.key] + hi[a.key] > 0).map((a) => {
       const k = a.key;
@@ -722,7 +768,7 @@ function refreshDistrictStats() {
   }
   const lead = document.getElementById("report-district-lead");
   if (lead) {
-    lead.textContent = `调研事件 ${EVENTS.length} 处、常年/用户图层 ${HIST.length} 处。分区按昆明市县级行政区；经开并入官渡、高新并入五华。卡片数字为事件+图层合计。`;
+    lead.textContent = `调研事件 ${EVENTS.length} 处、常年/用户图层 ${HIST.length} 处。下面这张分区分榜，仅供绕行避险——不是「昆明威尼斯」旅游指南。`;
   }
   paintMorphBars();
   paintCatalogTable();

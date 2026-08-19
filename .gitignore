@@ -2,6 +2,9 @@
 4h8g.pem
 *.pem
 
+# Local handover / internal notes (do not publish)
+会话交接*.md
+
 # OS / editor
 .DS_Store
 Thumbs.db

@@ -76,20 +76,27 @@
     <div class="report hidden" id="view-report">
       <div class="report-inner">
         <h1>昆明积水 · 区域分析</h1>
+
+        <div class="tier-board-wrap">
+          <h2 class="tier-board-title">2026 汛期 · 谁才是水城威尼斯？</h2>
+          <p class="muted tier-board-sub">按本库事件密度、跨场复发与断交时长主观分级。官渡区保送「夯」；其余区不服可带视频对线。</p>
+          <div class="tier-board" id="district-tier-list" aria-label="区县积水梯队榜"></div>
+        </div>
+
         <p class="lead" id="report-district-lead">
-          分区按昆明市县级行政区。点击下方卡片打开该区分图。经开/高新不是县级区。结论服务避险绕行，不是排水工程评估。
+          分区按昆明市县级行政区。卡片数字 = 事件 + 图层合计。经开并入官渡、高新并入五华。
         </p>
         <div class="district-board" id="district-board"></div>
         <p class="muted district-board-hint">数字 = 调研事件 + 常年/用户图层。只列出本库有点的区。</p>
         <div class="chips">
-          <span class="chip hot">官渡事件密度第一</span>
-          <span class="chip">4 条核心热点走廊</span>
-          <span class="chip blue">最长可见断交 ≥8h（牛街庄/国贸/长润）</span>
+          <span class="chip hot">官渡：水城威尼斯预备役</span>
+          <span class="chip">6 条热点走廊 · 双排围观</span>
+          <span class="chip blue">断交 ≥8h 成就：牛街庄 / 国贸 / 长润</span>
         </div>
 
         <div class="callout">
           <strong>一句话结论</strong>
-          公开积水仍高度集中在官渡东/南走廊；西翼海源–滇缅与北城龙泉路、永昌/云纺、环城南路万象城一带依赖用户补点与历史报道交叉。呈贡多为管制型。
+          官渡东/南走廊仍是积水 C 位；西翼海源–滇缅靠跨场复发刷存在感；呈贡水深不公开，但管制名单从不缺席。数据仅供绕行，不构成「昆明威尼斯」旅游推荐。
         </div>
 
         <h2>区县明细</h2>
@@ -106,49 +113,51 @@
         <p class="muted">按事件点现库实算。下穿/立交与主干道低洼合计占绝大多数；交通影响主要来自「桥下连续带」。</p>
 
         <h2>六大热点走廊</h2>
-        <p class="muted">按「同场连片 + 跨场复发 + 断交时长」排序，不是单纯点数。</p>
+        <p class="muted">按「同场连片 + 跨场复发 + 断交时长」排序。不是点数排行榜，是堵车排行榜。</p>
 
+        <div class="corridor-grid">
         <div class="corridor">
           <div class="head"><h3>1. 东二环下层走廊</h3><span class="tag">极高</span></div>
           <p class="scope">二环东路 · 石虎关—南屏苑—锦都—昙华寺</p>
           <p class="meta-line">官渡 · 7.16 重度 + 8.18 多点断交 · 水深 30–50+ cm</p>
-          <p>桥下连续低洼带；一场雨可连片断交，清退常拖到午后甚至傍晚清淤。</p>
+          <p>桥下连续低洼带，昆明自己的「地下河」观光线。一场雨可连片断交，清退常拖到午后——清淤师傅的加班圣地。</p>
           <button type="button" class="jump-map" data-jump="0818">在地图看 8.18 该片 →</button>
         </div>
         <div class="corridor">
           <div class="head"><h3>2. 关上—官渡广场轴</h3><span class="tag">极高</span></div>
           <p class="scope">国贸路 · 金汁路至官渡广场 · 民航路长润街下穿</p>
           <p class="meta-line">官渡 · 国贸路双场次；长润街 8.18 加深 · 30→50 cm</p>
-          <p>低洼主干道 + 下穿叠加；国贸路 7.16 中度、8.18 断交≥8h，属「反复发作」点。</p>
+          <p>低洼路 + 下穿叠 buff。7.16 中度、8.18 断交≥8h，属于「门槛不高、复发很勤」型选手。</p>
           <button type="button" class="jump-map" data-jump="0818">在地图看该轴 →</button>
         </div>
         <div class="corridor">
           <div class="head"><h3>3. 贵昆路—牛街庄—经开涵洞带</h3><span class="tag">高</span></div>
           <p class="scope">牛街庄隧道 · 金马村涵洞 · 河岸村 · 经东路</p>
           <p class="meta-line">官渡（含经开功能区） · 8.18 · 30–40 cm（牛街庄历史可更深）</p>
-          <p>铁路/道路下穿集群；牛街庄断交可见≥8h，东向出城与机场衔接受阻。</p>
+          <p>铁路/道路下穿集群，东向出城与机场衔接的「涵洞盲盒」。牛街庄断交≥8h，历史最深还能更深。</p>
           <button type="button" class="jump-map" data-jump="0818">在地图看涵洞带 →</button>
         </div>
         <div class="corridor">
           <div class="head"><h3>4. 广福—前卫—昌宏南片</h3><span class="tag">高</span></div>
           <p class="scope">前卫西路×广福 · 希望路×广福 · 彩云北×昌宏/雨龙</p>
           <p class="meta-line">官渡/西山交界 · 广福路南片 · 7.16 重度/中度为主 · 前卫 &gt;50→25 cm</p>
-          <p>短时强降雨雨心偏南时先淹；前卫雨量站 3h 80.9 mm 与重度点对应。</p>
+          <p>雨心偏南时先淹这里。前卫雨量站 3h 80.9 mm，十一家具城路口：用户确认「大雨必淹」，官方也盖章。</p>
           <button type="button" class="jump-map" data-jump="0716">在地图看 7.16 南片 →</button>
         </div>
         <div class="corridor">
           <div class="head"><h3>5. 海源—滇缅西部轴</h3><span class="tag mid">中高</span></div>
           <p class="scope">海源中路 · 滇缅大道至黄土坡立交</p>
-          <p class="meta-line">五华 / 西山交界 · 仅 7.16 出现在本样本 · &gt;50 cm</p>
-          <p>雨带偏西时的「另一条脊」；本样本未与 8.18 叠加，但不能当安全区。</p>
+          <p class="meta-line">五华 / 西山交界 · 7.16 / 7.17 / 8.10 三进宫 · &gt;50 cm</p>
+          <p>雨带偏西时的「另一条脊」。8.18 交警名单里隐身，但跨场复发说明：不能当安全区，只能当「老朋友」。</p>
           <button type="button" class="jump-map" data-jump="0716">在地图看西翼 →</button>
         </div>
         <div class="corridor">
           <div class="head"><h3>6. 呈贡环湖 / 下穿</h3><span class="tag low">中（数据不全）</span></div>
           <p class="scope">金桂街 · 兴呈路小古城 · 昆玉路下穿</p>
           <p class="meta-line">呈贡 · 8.2–3 · 官方未公开水深</p>
-          <p>新区主干道 + 下穿管制型；水深缺公开数据，地图上易被低估。</p>
+          <p>新区也要交「进城学费」：管制名单很全，水深很神秘。地图上容易显得比实际更「干爽」。</p>
           <button type="button" class="jump-map" data-jump="0802">在地图看呈贡 →</button>
+        </div>
         </div>
 
         <h2>复发与差异：雨心在哪，淹哪</h2>
@@ -247,7 +256,7 @@
       <div class="report-inner">
         <h1>用户反馈</h1>
         <p class="lead" id="ugc-thanks">
-          谢谢以下同志的建议和报点。你们在笔记、评论里写下的路口和视频，帮这张图补上了通报没点名的路段。
+          谢谢以下热心市民的建议和报点。你们在笔记、评论里写下的路口和视频，帮这张图补上了通报没点名的路段。
         </p>
         <div class="callout info">
           <strong>怎么看这张表</strong>
