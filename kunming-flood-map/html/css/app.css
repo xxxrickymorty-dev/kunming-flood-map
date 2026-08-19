@@ -82,6 +82,10 @@ body {
   background: #1d4ed8;
   border-color: #1d4ed8;
 }
+.topnav button.ugc.on {
+  background: #0f766e;
+  border-color: #0f766e;
+}
 .topnav button.district.on {
   background: #0f766e;
   border-color: #0f766e;
@@ -728,6 +732,18 @@ table.catalog .amap {
   text-align: left;
   text-decoration: underline;
 }
+.fb-st {
+  display: inline-block;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.fb-st.ok { background: #d1fae5; color: #065f46; }
+.fb-st.mid { background: #ffedd5; color: #9a3412; }
+.fb-st.neg { background: #e5e7eb; color: #374151; }
+.fb-st.maybe { background: #fef3c7; color: #92400e; }
+#view-ugc table.catalog { min-width: 720px; }
 .jump-map {
   display: inline-block;
   margin-top: 8px;

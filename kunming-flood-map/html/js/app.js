@@ -113,7 +113,7 @@ const PERIOD = {
   "0818": {
     title: "8.18 强降雨 · 淹水点",
     sub: "降雨主时段 17 日 23 时–18 日 6 时 · 金马凉亭站 24h 158.1 mm",
-    banner: "<strong>8.18</strong>：交警分时断交以官渡为主；10:15 原文见信息港。消防另点万象城、福发路、彩虹华谊、中医二附院等排涝点（非断交名单）。长润街白天 30→50 cm。"
+    banner: "<strong>8.18</strong>：交警分时断交以官渡为主；10:15 原文见信息港。消防另点万象城、福发路、彩虹华谊、中医二附院等排涝点（非断交名单）。小红书/水务局转述补了一批下穿与交叉口，见顶部「用户反馈」。长润街白天 30→50 cm。"
   },
   "0810": {
     title: "8.10 晨雨 · 淹水点",
@@ -128,7 +128,7 @@ const PERIOD = {
   "0717": {
     title: "7.17 分散暴雨 · 淹水点",
     sub: "21:15 起雨 · 安宁摆渡 442 人 · 五华最大约 40 cm",
-    banner: "<strong>7.17</strong>：雨心偏安宁太平新城与西山混团公路；五华滇缅/海源/昌源北与 7.16 同片复发。玉龙湾景区次日关闭。"
+    banner: "<strong>7.17</strong>：雨心偏安宁太平新城与西山团结公路（小河村–龙坪坝）；五华滇缅/海源/昌源北与 7.16 同片复发。玉龙湾景区次日关闭。"
   },
   "0727": {
     title: "7.27 官渡古镇 · 淹水点",
@@ -200,6 +200,10 @@ function sourceLinksFor(p) {
     seen.add(url);
     out.push({ name, url });
   };
+  if (Array.isArray(p.links) && p.links.length) {
+    p.links.forEach((l) => add(l.name, l.url));
+    return out;
+  }
   if (p.evt === "0716") {
     add("昆水管网 / 信息港", NEWS.昆水管网);
     return out;
@@ -261,10 +265,15 @@ let catalogF = "all", catalogQ = "";
 function catalogRecords() {
   const rows = [];
   EVENTS.forEach((p) => {
+    const layerKeys = [p.evt];
+    if (p.id.startsWith("U") || (Array.isArray(p.links) && p.links.some((l) => /xiaohongshu/.test(l.url || "")))) {
+      layerKeys.push("feedback");
+    }
     rows.push({
       id: p.id,
-      layer: "调研事件",
+      layer: p.id.startsWith("U") ? "用户反馈" : "调研事件",
       layerKey: p.evt,
+      layerKeys,
       name: p.name,
       district: districtKey(p.district),
       when: `${EVT_LABEL[p.evt]} · ${EVT_WHEN[p.evt]}`,
@@ -282,6 +291,7 @@ function catalogRecords() {
       id: p.n,
       layer: ugc ? "用户补点" : "常年易淹",
       layerKey: ugc ? "ugc" : "hist",
+      layerKeys: ugc ? ["ugc"] : ["hist"],
       name: p.name,
       district: districtKey(p.district),
       when: ugc ? "用户补点" : (p.evt ? `常年 · 兼 ${EVT_LABEL[p.evt]}` : "常年易淹"),
@@ -302,7 +312,8 @@ function paintCatalogTable() {
   if (!body) return;
   const all = catalogRecords();
   const rows = all.filter((r) => {
-    if (catalogF !== "all" && r.layerKey !== catalogF) return false;
+    const keys = r.layerKeys || [r.layerKey];
+    if (catalogF !== "all" && !keys.includes(catalogF)) return false;
     if (catalogQ && !r.hay.includes(catalogQ)) return false;
     return true;
   });
@@ -326,6 +337,34 @@ function paintCatalogTable() {
   if (cap) {
     cap.textContent = `地图库全量 ${all.length} 条，当前筛选 ${rows.length} 条（调研事件 ${EVENTS.length} + 常年/用户 ${HIST.length}）。坐标为高德 GCJ-02。来源、高德链接与地图弹窗一致。`;
   }
+}
+
+function paintFeedbackTable() {
+  const body = document.getElementById("feedback-body");
+  if (!body) return;
+  const rows = window.FLOOD_DATA.feedback || [];
+  const inMap = (s) => s === "已入库" || s === "已有点（细化）";
+  body.innerHTML = rows.map((r) => {
+    const place = r.pin
+      ? `<button type="button" class="catalog-goto" data-goto="${esc(r.pin)}">${esc(r.place)}</button>`
+      : esc(r.place);
+    const pinCell = r.pin
+      ? `<button type="button" class="catalog-goto" data-goto="${esc(r.pin)}">${esc(r.pin)}</button>`
+      : "—";
+    const stClass = r.status === "已入库" ? "ok"
+      : r.status === "已有点（细化）" ? "mid"
+      : r.status === "负例不入库" ? "neg"
+      : "maybe";
+    return `<tr>
+      <td>${esc(r.user)}</td>
+      <td class="place">${place}</td>
+      <td><span class="fb-st ${stClass}">${esc(r.status)}</span></td>
+      <td>${inMap(r.status) ? "是" : "否"}</td>
+      <td>${pinCell}</td>
+      <td>${esc(r.district || "")}</td>
+      <td class="amap"><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.noteTitle || "小红书笔记")}</a></td>
+    </tr>`;
+  }).join("");
 }
 
 function gotoPoint(id) {
@@ -670,7 +709,7 @@ function refreshDistrictStats() {
       呈贡: "8.2–3 临时管制为主；水深公开不足",
       五华: "海源–滇缅跨 7.16 / 7.17 / 8.10；用户补点（金泰/戛纳/海源北/龙泉路；高新功能区并入本区）",
       盘龙: "道路名单少；金汁河/盘龙江沿岸老社区在常年层",
-      西山: "华昌×采莲、永昌/云纺、豆腐营低洼带；前卫西路×广福路（十一家具城）7.16 重度；7.17 混团公路",
+      西山: "华昌×采莲、永昌/云纺、豆腐营低洼带；前卫西路×广福路（十一家具城）7.16 重度；7.17 团结公路（小河村–龙坪坝）",
       安宁: "7.17 官方点名太平新城（万辉/玉龙湾/昆海湖），摆渡 442 人"
     };
     tbl.innerHTML = ADMIN.filter((a) => ev[a.key] + hi[a.key] > 0).map((a) => {
@@ -710,15 +749,19 @@ function setView(view, { fit = true, push = true } = {}) {
   if (!VALID_VIEWS.has(view)) view = "all";
   currentView = view;
   const isReport = view === "report";
+  const isUgcPage = view === "ugc";
+  const isPage = isReport || isUgcPage;
   const histMode = view === "hist";
   const districtMode = view.startsWith("d-");
   districtF = districtMode ? view.slice(2) : null;
 
-  document.getElementById("view-map").classList.toggle("hidden", isReport);
+  document.getElementById("view-map").classList.toggle("hidden", isPage);
   document.getElementById("view-report").classList.toggle("hidden", !isReport);
-  document.getElementById("map-tools").classList.toggle("hidden", isReport);
-  document.getElementById("place-search").classList.toggle("hidden", isReport);
-  document.getElementById("legend").classList.toggle("hidden", isReport);
+  const ugcEl = document.getElementById("view-ugc");
+  if (ugcEl) ugcEl.classList.toggle("hidden", !isUgcPage);
+  document.getElementById("map-tools").classList.toggle("hidden", isPage);
+  document.getElementById("place-search").classList.toggle("hidden", isPage);
+  document.getElementById("legend").classList.toggle("hidden", isPage);
 
   document.querySelectorAll(".topnav [data-view]").forEach((b) => {
     b.classList.toggle("on", b.dataset.view === view || (districtMode && b.dataset.view === "report"));
@@ -732,6 +775,11 @@ function setView(view, { fit = true, push = true } = {}) {
   if (isReport) {
     clearDistrictOverlay();
     refreshDistrictStats();
+    return;
+  }
+  if (isUgcPage) {
+    clearDistrictOverlay();
+    paintFeedbackTable();
     return;
   }
 

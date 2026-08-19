@@ -22,6 +22,7 @@
       <button type="button" data-view="0717">7.17</button>
       <button type="button" data-view="0716">7.16</button>
       <button type="button" class="hist" data-view="hist">常年易淹</button>
+      <button type="button" class="ugc" data-view="ugc">用户反馈</button>
       <button type="button" class="report" data-view="report">区域分析</button>
     </div>
   </nav>
@@ -164,7 +165,7 @@
             <h3>场次差异</h3>
             <ul>
               <li><strong>7.16</strong>：前卫西路重度 + 海源/滇缅西翼；雨心偏南与西。</li>
-              <li><strong>7.17</strong>：雨心偏安宁太平新城与西山混团公路。</li>
+              <li><strong>7.17</strong>：雨心偏安宁太平新城与西山团结公路（小河村–龙坪坝）。</li>
               <li><strong>7.27</strong>：官渡古镇云秀路短时过膝，非交警名单。</li>
               <li><strong>8.2–3</strong>：呈贡与矣六/小板桥、云秀康园；水深公开缺失。</li>
               <li><strong>8.10</strong>：管网 6 处，10:35 清完，文中未写断交。</li>
@@ -202,6 +203,7 @@
             <button type="button" data-catalog="0716">7.16</button>
             <button type="button" data-catalog="hist">常年易淹</button>
             <button type="button" data-catalog="ugc">用户补点</button>
+            <button type="button" data-catalog="feedback">用户反馈</button>
           </div>
         </div>
         <div class="catalog-wrap">
@@ -237,6 +239,39 @@
         </p>
         <p class="back-row">
           <button type="button" class="jump-map" data-jump="all">回到全部淹水地图 →</button>
+        </p>
+      </div>
+    </div>
+
+    <div class="report hidden" id="view-ugc">
+      <div class="report-inner">
+        <h1>用户反馈</h1>
+        <p class="lead" id="ugc-thanks">
+          谢谢以下同志的建议和报点。你们在笔记、评论里写下的路口和视频，帮这张图补上了通报没点名的路段。
+        </p>
+        <div class="callout info">
+          <strong>怎么看这张表</strong>
+          已入库的地点可以点名称跳到地图针。负例是「这次没淹 / 不是 8.18」——记一笔，不当积水点。存疑的坐标不敢瞎标，先留表里。
+        </div>
+        <div class="catalog-wrap">
+          <table class="data catalog" id="feedback-table">
+            <thead>
+              <tr>
+                <th>用户名</th>
+                <th>反馈地点</th>
+                <th>更新状态</th>
+                <th>是否入库</th>
+                <th>对应地图编号</th>
+                <th>区县</th>
+                <th>来源笔记链接</th>
+              </tr>
+            </thead>
+            <tbody id="feedback-body"></tbody>
+          </table>
+        </div>
+        <p class="muted">昵称按公开笔记/评论能看见的写；评论没留名的记作「小红书用户」。水务局清单来自笔记转述，不是信息港原文。</p>
+        <p class="back-row">
+          <button type="button" class="jump-map" data-jump="0818">去看 8.18 地图 →</button>
         </p>
       </div>
     </div>
