@@ -73,7 +73,7 @@ const HIST = window.FLOOD_DATA.hist;
   });
 }
 
-const EVT_LABEL = { "0818": "8.18", "0716": "7.16", "0802": "8.2–3" };
+const EVT_LABEL = { "0818": "8.18", "0810": "8.10", "0802": "8.2–3", "0727": "7.27", "0717": "7.17", "0716": "7.16" };
 const KIND_LABEL = { closed: "断交/重度", mid: "中度", slow: "缓行", ctrl: "管制/未测深" };
 const PIN_CLASS = { closed: "closed", mid: "mid", slow: "slow", ctrl: "ctrl" };
 const RING = { closed: "#c1121f", mid: "#e85d04", slow: "#f59e0b", ctrl: "#4f46e5" };
@@ -108,22 +108,37 @@ const PERIOD = {
   all: {
     title: "调研事件点 · 全部场次",
     sub: "依据 2026 汛期公开通报：昆水管网、交警、消防、机场提示。",
-    banner: "<strong>全部场次</strong>：合并 7.16 / 8.2–3 / 8.18。积水高度集中在官渡东南。常年易淹请切顶部「常年易淹」分页。"
+    banner: "<strong>全部场次</strong>：合并 7.16 / 7.17 / 7.27 / 8.2–3 / 8.10 / 8.18。积水高度集中在官渡东南，西翼海源–滇缅跨场复发。常年易淹请切顶部「常年易淹」分页。"
   },
   "0818": {
     title: "8.18 强降雨 · 淹水点",
     sub: "降雨主时段 17 日 23 时–18 日 6 时 · 金马凉亭站 24h 158.1 mm",
-    banner: "<strong>8.18</strong>：东向官渡/经开吃紧。牛街庄、长润街、国贸路可见断交 ≥8h；长润街白天从 30 cm 加深到 50 cm；日新立交上午约 50 cm。"
+    banner: "<strong>8.18</strong>：交警分时断交以官渡为主；10:15 原文见信息港。消防另点万象城、福发路、彩虹华谊、中医二附院等排涝点（非断交名单）。长润街白天 30→50 cm。"
+  },
+  "0810": {
+    title: "8.10 晨雨 · 淹水点",
+    sub: "管网 6 处 · 6:30 戒备 · 10:35 全部处置完毕",
+    banner: "<strong>8.10</strong>：昆水管网 6 处，文中未写断交。含林家围、中林建材城、广福路广卫立交–星耀路、迎海路×观景路；海源中路、广福云秀–昌宏为跨场复发。"
   },
   "0716": {
     title: "7.16 大暴雨 · 淹水点",
     sub: "凌晨约 01:00 起 · 前卫雨量站 3 小时 80.9 mm · 昆水管网 24 处",
     banner: "<strong>7.16</strong>：重度 6 处含<strong>前卫西路与广福路交叉口</strong>（&gt;50→25 cm，至少约 7h）。雨心偏南与西：广福南片 + 海源/滇缅。国贸路当日为中度，8.18 再发。"
   },
+  "0717": {
+    title: "7.17 分散暴雨 · 淹水点",
+    sub: "21:15 起雨 · 安宁摆渡 442 人 · 五华最大约 40 cm",
+    banner: "<strong>7.17</strong>：雨心偏安宁太平新城与西山混团公路；五华滇缅/海源/昌源北与 7.16 同片复发。玉龙湾景区次日关闭。"
+  },
+  "0727": {
+    title: "7.27 官渡古镇 · 淹水点",
+    sub: "短时暴雨 · 云秀路近百米 · 非交警断交名单",
+    banner: "<strong>7.27</strong>：官渡古镇云秀路十余分钟起淹，最深过膝，夜里约 2 点退。社区抽排，不是交警主名单。"
+  },
   "0802": {
     title: "8.2–3 局部暴雨 · 淹水点",
     sub: "防汛Ⅳ级 · 官渡 / 呈贡 / 经开 · 公开水深不足",
-    banner: "<strong>8.2–3</strong>：呈贡金桂街、兴呈路、昆玉路下穿临时管制；官渡小板桥/矣六局部积水。水深与清退时刻公开少，地图上易低估。"
+    banner: "<strong>8.2–3</strong>：呈贡金桂街、兴呈路、昆玉路下穿临时管制；官渡小板桥/矣六、云秀康园外围、杜家营垂钓园。水深与清退时刻公开少。"
   }
 };
 
@@ -160,34 +175,72 @@ function pinIcon(text, cls) {
 const NEWS = {
   昆水管网: "https://www.kunming.cn/news/c/2026-07-17/14059480.shtml",
   昆明信息港: "https://www.kunming.cn/news/c/2026-07-17/14059480.shtml",
+  信息港0717: "https://www.kunming.cn/news/c/2026-07-18/14059759.shtml",
+  信息港0727: "https://www.kunming.cn/video/c/2026-07-29/14062436.shtml",
+  转载0727: "https://c.m.163.com/news/a/L2V0NPKS0552SO56.html",
   昆明日报: "https://c.m.163.com/news/a/L3FPSGEN05346936.html",
-  昆明交警: "http://km.bendibao.com/news/2026818/106761.shtm",
+  人民网0802: "http://yn.people.com.cn/n2/2026/0804/c372456-41658327.html",
+  都市时报: "https://www.jinantimes.com.cn/news-107-10844375.html",
+  云南网0810: "https://kunming.yunnan.cn/system/2026/08/11/034118653.shtml",
+  昆明交警: "https://www.kunming.cn/news/c/2026-08-18/14067262.shtml",
+  信息港0818: "https://www.kunming.cn/news/c/2026-08-18/14067262.shtml",
+  信息港0818午: "https://www.kunming.cn/news/c/2026-08-18/14067266.shtml",
   本地宝: "http://km.bendibao.com/news/2026818/106761.shtm",
   本地宝早报: "http://km.bendibao.com/news/2026818/106761.shtm",
   澎湃: "https://www.163.com/dy/article/L4K84UA50514R9P4.html",
-  长水机场: "https://www.163.com/dy/article/L4K84UA50514R9P4.html"
+  长水机场: "https://www.163.com/dy/article/L4K84UA50514R9P4.html",
+  昆明消防: "https://www.kunming.cn/news/c/2026-08-18/14067231.shtml"
 };
 
 function sourceLinksFor(p) {
+  const out = [];
+  const seen = new Set();
+  const add = (name, url) => {
+    if (!url || seen.has(url)) return;
+    seen.add(url);
+    out.push({ name, url });
+  };
   if (p.evt === "0716") {
-    return [
-      { name: "昆水管网", url: NEWS.昆水管网 },
-      { name: "昆明信息港", url: NEWS.昆明信息港 }
-    ];
+    add("昆水管网 / 信息港", NEWS.昆水管网);
+    return out;
+  }
+  if (p.evt === "0717") {
+    add("昆明信息港", NEWS.信息港0717);
+    return out;
+  }
+  if (p.evt === "0727") {
+    add("信息港视频", NEWS.信息港0727);
+    add("8099999 转载", NEWS.转载0727);
+    return out;
+  }
+  if (p.evt === "0810") {
+    add("云南网 / 昆水管网", NEWS.云南网0810);
+    return out;
   }
   if (p.evt === "0802") {
-    return [{ name: "昆明日报", url: NEWS.昆明日报 }];
+    if (/都市时报/.test(p.source || "")) add("都市时报", NEWS.都市时报);
+    add("人民网云南", NEWS.人民网0802);
+    add("昆明日报转载", NEWS.昆明日报);
+    return out;
+  }
+  if (p.evt === "0818" && /消防/.test(p.source || "")) {
+    add("昆明消防（信息港）", NEWS.昆明消防);
+    return out;
   }
   const s = String(p.source || "");
-  const byUrl = new Map();
-  for (const name of ["本地宝早报", "长水机场", "昆水管网", "昆明信息港", "昆明日报", "昆明交警", "本地宝", "澎湃"]) {
+  for (const name of ["本地宝早报", "长水机场", "昆水管网", "昆明信息港", "昆明日报", "昆明交警", "本地宝", "澎湃", "昆明消防"]) {
     if (!s.includes(name)) continue;
-    const url = NEWS[name];
-    if (!url) continue;
-    if (!byUrl.has(url)) byUrl.set(url, []);
-    if (!byUrl.get(url).includes(name)) byUrl.get(url).push(name);
+    add(name === "昆明交警" ? "昆明交警（信息港）" : name, NEWS[name] || NEWS.信息港0818);
   }
-  return [...byUrl.entries()].map(([url, names]) => ({ name: names.join(" / "), url }));
+  if (p.evt === "0818" && !out.length) {
+    add("昆明交警（信息港 10:15）", NEWS.信息港0818);
+    add("信息港 13:00", NEWS.信息港0818午);
+    add("本地宝分时", NEWS.本地宝);
+  } else if (p.evt === "0818") {
+    add("信息港 13:00", NEWS.信息港0818午);
+    add("本地宝分时", NEWS.本地宝);
+  }
+  return out;
 }
 
 function amapHref(lat, lng, name) {
@@ -202,7 +255,7 @@ function sourceLinksHtml(p) {
   return esc(p.source || "常年图层");
 }
 
-const EVT_WHEN = { "0818": "2026-08-18", "0716": "2026-07-16", "0802": "2026-08-02～03" };
+const EVT_WHEN = { "0818": "2026-08-18", "0810": "2026-08-10", "0802": "2026-08-02～03", "0727": "2026-07-27", "0717": "2026-07-17", "0716": "2026-07-16" };
 let catalogF = "all", catalogQ = "";
 
 function catalogRecords() {
@@ -447,7 +500,7 @@ function updatePeriodCopy() {
       boundNote = `${unitLine}（${admin.streets}）。早报写「经开」的涵洞点已按行政区并入本区。`
         + "地图编号 26 是用户补点万象城（吴井环城南路1号）。浅蓝为行政示意。";
     } else if (admin && evN + hiN === 0) {
-      boundNote = `${unitLine}。本库暂无 2026 汛期公开点名积水（主城三场通报未列本区），不是没有这个区。`;
+      boundNote = `${unitLine}。本库暂无 2026 汛期公开点名积水（六场通报未列本区），不是没有这个区。`;
     } else if (admin) {
       boundNote = `${unitLine}。${boundNote}`;
     }
@@ -482,8 +535,8 @@ function fitVisible(pad) {
   let maxZoom = 12;
   if (isHistView()) maxZoom = 11;
   else if (isDistrictView()) maxZoom = districtF === "安宁" || districtF === "呈贡" ? 12 : 13;
-  else if (evtF === "0802") maxZoom = 12;
-  else if (evtF === "0716") maxZoom = 12;
+  else if (evtF === "0717") maxZoom = 11;
+  else if (evtF === "0802" || evtF === "0716" || evtF === "0810") maxZoom = 12;
   else maxZoom = 13;
   map.flyToBounds(pts, { padding, maxZoom, duration: 0.55 });
 }
@@ -613,12 +666,12 @@ function refreshDistrictStats() {
   const tbl = document.getElementById("district-table-body");
   if (tbl) {
     const notes = {
-      官渡: "三场暴雨均有；东二环、国贸、牛街庄、广福南片集中。金马（菊华/大树营）、吴井（万象城）、长水机场属本区。早报「经开」涵洞 4 处已并入。",
+      官渡: "六场均有点；东二环、国贸、牛街庄、广福南片集中。7.27 古镇云秀路、8.10 管网、8.18 消防排涝亦在本区。金马（菊华/大树营）、吴井（万象城）、长水机场属本区。早报「经开」涵洞 4 处已并入。",
       呈贡: "8.2–3 临时管制为主；水深公开不足",
-      五华: "海源–滇缅正式通报 + 用户补点（金泰/戛纳/海源北/龙泉路；高新功能区并入本区）",
+      五华: "海源–滇缅跨 7.16 / 7.17 / 8.10；用户补点（金泰/戛纳/海源北/龙泉路；高新功能区并入本区）",
       盘龙: "道路名单少；金汁河/盘龙江沿岸老社区在常年层",
-      西山: "华昌×采莲、永昌/云纺、豆腐营低洼带；前卫西路×广福路（十一家具城）7.16 重度",
-      安宁: "万辉星城、玉龙湾等历史纪录（常年层）"
+      西山: "华昌×采莲、永昌/云纺、豆腐营低洼带；前卫西路×广福路（十一家具城）7.16 重度；7.17 混团公路",
+      安宁: "7.17 官方点名太平新城（万辉/玉龙湾/昆海湖），摆渡 442 人"
     };
     tbl.innerHTML = ADMIN.filter((a) => ev[a.key] + hi[a.key] > 0).map((a) => {
       const k = a.key;
