@@ -28,5 +28,3 @@ kunming-flood-map/
 会自动：同步根目录 `昆明积水地图-0818.html` → `html/index.html`（Leaflet 改 `/vendor/`）→ 上传 `/workspace/kunming-flood-map` → 重载 Docker nginx。
 
 Agent 发布流程见：`.cursor/skills/kunming-flood-deploy/SKILL.md`（以及个人 skill `~/.cursor/skills/kunming-flood-deploy`）。
-
-密钥：根目录 `4h8g.pem`（SSH 私钥，勿公开）。
