@@ -1,6 +1,7 @@
 # Secrets / keys
 4h8g.pem
 *.pem
+kunming-flood-map/.env
 
 # Local handover / internal notes (do not publish)
 会话交接*.md

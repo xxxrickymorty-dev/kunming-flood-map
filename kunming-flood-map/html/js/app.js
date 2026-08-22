@@ -83,6 +83,105 @@ const EVENT_RING_R = 110;   // 事件点圈半径（绘制与命中共用）
 const EVENT_NEAR_PAD = 80;  // 事件点“邻近”余量
 const HIST_NEAR_PAD = 120;  // 常年/用户点“邻近”余量
 const HIST_DEFAULT_R = 200;
+const PLACE_NEAR_SCAN_M = 3500; // 目的地检索：展示周边最近积水点的半径
+const PLACE_FOCUS_RADIUS_M = 420; // 搜索定位时视野半径（约占半屏）
+
+/* 叠点合并：同场 150 m 内只保留一枚图钉；跨场次仅 60 m 内合并（避免 J3/U24 等刻意错针被并掉） */
+const OVERLAP_DEDUP_SAME_EVT_M = 150;
+const OVERLAP_DEDUP_CROSS_EVT_M = 60;
+
+function haversineM(aLat, aLng, bLat, bLng) {
+  const R = 6371000;
+  const toR = (d) => d * Math.PI / 180;
+  const dLat = toR(bLat - aLat);
+  const dLng = toR(bLng - aLng);
+  const x = Math.sin(dLat / 2) ** 2
+    + Math.cos(toR(aLat)) * Math.cos(toR(bLat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(x));
+}
+
+function sourceRank(source) {
+  const s = String(source || "");
+  if (/昆明交警|昆明消防|昆水管网|昆明信息港|昆明日报/.test(s)) return 100;
+  if (/本地宝|澎湃|长水机场|都市时报|云南网/.test(s)) return 80;
+  if (/水务局/.test(s)) return 65;
+  if (/用户反馈/.test(s)) return 35;
+  if (/小红书/.test(s)) return 40;
+  return 50;
+}
+
+const KIND_RANK = { closed: 4, ctrl: 3, mid: 2, slow: 1 };
+
+function pickOverlapPrimary(a, b) {
+  const ra = sourceRank(a.source);
+  const rb = sourceRank(b.source);
+  if (ra !== rb) return ra > rb ? a : b;
+  const ka = KIND_RANK[a.kind] || 0;
+  const kb = KIND_RANK[b.kind] || 0;
+  if (ka !== kb) return ka > kb ? a : b;
+  const na = typeof a.n === "number" ? a.n : 999;
+  const nb = typeof b.n === "number" ? b.n : 999;
+  return na <= nb ? a : b;
+}
+
+function shouldMergeOverlap(a, b, distM) {
+  if (a.evt === b.evt) return distM <= OVERLAP_DEDUP_SAME_EVT_M;
+  return distM <= OVERLAP_DEDUP_CROSS_EVT_M;
+}
+
+function dedupeEventClusters(events) {
+  const n = events.length;
+  const parent = events.map((_, i) => i);
+  function find(i) {
+    while (parent[i] !== i) {
+      parent[i] = parent[parent[i]];
+      i = parent[i];
+    }
+    return i;
+  }
+  function unite(i, j) {
+    parent[find(i)] = find(j);
+  }
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      const d = haversineM(events[i].lat, events[i].lng, events[j].lat, events[j].lng);
+      if (shouldMergeOverlap(events[i], events[j], d)) unite(i, j);
+    }
+  }
+  const clusters = new Map();
+  for (let i = 0; i < n; i++) {
+    const r = find(i);
+    if (!clusters.has(r)) clusters.set(r, []);
+    clusters.get(r).push(events[i]);
+  }
+  events.forEach((p) => {
+    p._mergedInto = null;
+    p._mergedFrom = [];
+  });
+  for (const group of clusters.values()) {
+    if (group.length < 2) continue;
+    let primary = group[0];
+    for (let k = 1; k < group.length; k++) primary = pickOverlapPrimary(primary, group[k]);
+    primary._mergedFrom = group.filter((p) => p.id !== primary.id);
+    for (const sec of primary._mergedFrom) sec._mergedInto = primary.id;
+  }
+}
+
+function mergedNoteLines(p) {
+  if (!p._mergedFrom?.length) return [];
+  return p._mergedFrom.map((m) => {
+    const label = String(typeof m.n === "number" ? m.n : m.id);
+    return `同位置另有：${m.name}（编号 ${label} · ${KIND_LABEL[m.kind]} · ${m.depth}）`;
+  });
+}
+
+function resolveEventPrimary(p) {
+  let cur = p;
+  while (cur._mergedInto) {
+    cur = EVENTS.find((x) => x.id === cur._mergedInto) || cur;
+  }
+  return cur;
+}
 
 /* 昆明市县级行政区（国标代码，与用户提供的 2025 区划一致）。经开/高新/度假区不是县级区。 */
 const ADMIN = [
@@ -113,7 +212,7 @@ const PERIOD = {
   "0818": {
     title: "8.18 强降雨 · 淹水点",
     sub: "降雨主时段 17 日 23 时–18 日 6 时 · 金马凉亭站 24h 158.1 mm",
-    banner: "<strong>8.18</strong>：交警分时断交以官渡为主；10:15 原文见信息港。消防另点万象城、福发路、彩虹华谊、中医二附院等排涝点（非断交名单）。小红书/水务局转述补了一批下穿与交叉口，见顶部「用户反馈」。长润街白天 30→50 cm。"
+    banner: "<strong>8.18</strong>：交警分时断交以官渡为主；10:15 原文见信息港。消防另点万象城、福发路（官南大道口用户视频严重）、彩虹华谊、中医二附院等。小红书/水务局转述补点见「用户反馈」。长润街白天 30→50 cm。"
   },
   "0810": {
     title: "8.10 晨雨 · 淹水点",
@@ -138,7 +237,7 @@ const PERIOD = {
   "0802": {
     title: "8.2–3 局部暴雨 · 淹水点",
     sub: "防汛Ⅳ级 · 官渡 / 呈贡 / 经开 · 公开水深不足",
-    banner: "<strong>8.2–3</strong>：呈贡金桂街、兴呈路、昆玉路下穿临时管制；官渡小板桥/矣六、云秀康园外围、杜家营垂钓园。水深与清退时刻公开少。"
+    banner: "<strong>8.2–3</strong>：呈贡金桂街、兴呈路、昆玉路下穿临时管制；官渡小板桥/矣六、云秀康园外围、杜家营垂钓园；用户补：8.3 珥季路广福–如意中双向管制、广福路世纪城西南门东向西限道。水深与清退时刻公开少。"
   }
 };
 
@@ -269,20 +368,25 @@ function catalogRecords() {
     if (p.id.startsWith("U") || (Array.isArray(p.links) && p.links.some((l) => /xiaohongshu/.test(l.url || "")))) {
       layerKeys.push("feedback");
     }
+    const primary = resolveEventPrimary(p);
+    const mergedTag = p._mergedInto ? ` 已并入 ${primary.id}` : "";
+    const mergedHay = primary._mergedFrom?.length
+      ? primary._mergedFrom.map((m) => `${m.id} ${m.name}`).join(" ")
+      : "";
     rows.push({
       id: p.id,
       layer: p.id.startsWith("U") ? "用户反馈" : "调研事件",
       layerKey: p.evt,
       layerKeys,
-      name: p.name,
+      name: p._mergedInto ? `${p.name}${mergedTag}` : p.name,
       district: districtKey(p.district),
       when: `${EVT_LABEL[p.evt]} · ${EVT_WHEN[p.evt]}`,
       depth: p.depth,
       impact: KIND_LABEL[p.kind],
-      duration: p.duration,
+      duration: p._mergedInto ? `→ ${primary.id}（#${primary._label}）` : p.duration,
       morph: MORPH_LABEL[p.morph] || p.morph,
-      hay: `${p.id} ${p.name} ${p.district} ${p.depth} ${p.source} ${p.duration} ${p.note}`,
-      p
+      hay: `${p.id} ${p.name} ${p.district} ${p.depth} ${p.source} ${p.duration} ${p.note}${mergedTag} ${mergedHay}`,
+      p: p._mergedInto ? primary : p
     });
   });
   HIST.forEach((p) => {
@@ -368,11 +472,12 @@ function paintFeedbackTable() {
 }
 
 function gotoPoint(id) {
-  const ev = EVENTS.find((p) => p.id === id);
+  let ev = EVENTS.find((p) => p.id === id);
   if (ev) {
+    ev = resolveEventPrimary(ev);
     setView(ev.evt, { fit: false });
     map.flyTo(ev._ll, 15, { duration: 0.45 });
-    setTimeout(() => ev._marker.openPopup(), 320);
+    setTimeout(() => ev._marker?.openPopup(), 320);
     return;
   }
   const hi = HIST.find((p) => p.n === id);
@@ -393,16 +498,25 @@ function popupHtml(title, lines, latlng, links) {
   return `<div class="popup"><h3>${esc(title)}</h3>${body}${src}<p><a href="https://uri.amap.com/marker?position=${lng},${lat}&name=${encodeURIComponent(title)}" target="_blank" rel="noopener">用高德打开这一点</a></p></div>`;
 }
 
+dedupeEventClusters(EVENTS);
+
 const evtLayer = {};
 EVENTS.forEach((p, i) => {
   const ll = toMapLL(p.lat, p.lng);
   const label = String(typeof p.n === "number" ? p.n : i + 1);
+  p._ll = ll;
+  p._label = label;
+  if (p._mergedInto) {
+    p._marker = null;
+    return;
+  }
   const marker = L.marker(ll, { icon: pinIcon(label, PIN_CLASS[p.kind]), zIndexOffset: 600 });
   marker.bindPopup(popupHtml(p.name, [
     `${EVT_LABEL[p.evt]} · ${KIND_LABEL[p.kind]} · ${p.district}`,
     `水深：${p.depth}`,
     `持续：${p.duration}`,
-    p.note || ""
+    p.note || "",
+    ...mergedNoteLines(p)
   ], ll, sourceLinksFor(p)));
   const ring = L.circle(ll, {
     radius: EVENT_RING_R,
@@ -413,8 +527,6 @@ EVENTS.forEach((p, i) => {
   });
   evtLayer[p.id] = L.layerGroup([ring, marker]).addTo(map);
   p._marker = marker;
-  p._ll = ll;
-  p._label = label;
 });
 
 const histLayer = {};
@@ -507,6 +619,7 @@ const isHistView = () => currentView === "hist";
 const isDistrictView = () => currentView.startsWith("d-");
 
 function showEvt(p) {
+  if (p._mergedInto) return false;
   if (isHistView()) return false;
   if (isDistrictView()) {
     if (districtKey(p.district) !== districtF) return false;
@@ -583,6 +696,25 @@ function fitVisible(pad) {
 function isMobile() {
   return window.matchMedia("(max-width: 960px)").matches;
 }
+
+/* 阻止手机端整页横向滑移（保留地图拖拽与局部横向滚动） */
+(function preventMobileHorizontalPan() {
+  let startX = 0;
+  let startY = 0;
+  const scrollable = "#map, .leaflet-container, .list, .topnav .tabs, .catalog-wrap, .place-suggest, .report, .boards .bar, .place-search-form input, .map-overlay-top";
+  document.addEventListener("touchstart", (e) => {
+    if (e.touches.length !== 1) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+  document.addEventListener("touchmove", (e) => {
+    if (!isMobile() || e.touches.length !== 1) return;
+    if (e.target.closest(scrollable)) return;
+    const dx = Math.abs(e.touches[0].clientX - startX);
+    const dy = Math.abs(e.touches[0].clientY - startY);
+    if (dx > dy && dx > 8) e.preventDefault();
+  }, { passive: false });
+})();
 function setSheetOpen(open) {
   const boards = document.getElementById("boards");
   const btn = document.getElementById("sheet-toggle");
@@ -617,15 +749,20 @@ function render() {
   const box = document.getElementById("list-evt");
   box.innerHTML = "";
   EVENTS.forEach((p) => {
+    if (p._mergedInto) return;
     const on = showEvt(p);
-    if (on) map.addLayer(evtLayer[p.id]); else map.removeLayer(evtLayer[p.id]);
+    if (on && evtLayer[p.id]) map.addLayer(evtLayer[p.id]);
+    else if (evtLayer[p.id]) map.removeLayer(evtLayer[p.id]);
     if (!on) return;
+    const mergeHint = p._mergedFrom?.length
+      ? ` · 已合并 ${p._mergedFrom.map((m) => `#${m._label}`).join("、")}`
+      : "";
     box.appendChild(makeListButton(
-      `<span class="badge ${p.kind}">${esc(p._label)}</span><div><h3>${esc(p.name)}</h3><p>${esc(`${EVT_LABEL[p.evt]} · ${p.district} · ${KIND_LABEL[p.kind]} · ${p.duration}`)}</p></div><div class="meta ${p.kind}">${esc(p.depth)}</div>`,
+      `<span class="badge ${p.kind}">${esc(p._label)}</span><div><h3>${esc(p.name)}</h3><p>${esc(`${EVT_LABEL[p.evt]} · ${p.district} · ${KIND_LABEL[p.kind]} · ${p.duration}${mergeHint}`)}</p></div><div class="meta ${p.kind}">${esc(p.depth)}</div>`,
       () => {
         if (isMobile()) setSheetOpen(false);
         map.flyTo(p._ll, p.district === "呈贡" || p.district === "安宁" ? 14 : 15, { duration: 0.45 });
-        setTimeout(() => p._marker.openPopup(), isMobile() ? 280 : 0);
+        setTimeout(() => p._marker?.openPopup(), isMobile() ? 280 : 0);
       }
     ));
   });
@@ -805,6 +942,7 @@ function setView(view, { fit = true, push = true } = {}) {
   document.getElementById("view-report").classList.toggle("hidden", !isReport);
   const ugcEl = document.getElementById("view-ugc");
   if (ugcEl) ugcEl.classList.toggle("hidden", !isUgcPage);
+  document.getElementById("map-overlay-top")?.classList.toggle("hidden", isPage);
   document.getElementById("map-tools").classList.toggle("hidden", isPage);
   document.getElementById("place-search").classList.toggle("hidden", isPage);
   document.getElementById("legend").classList.toggle("hidden", isPage);
@@ -891,10 +1029,6 @@ document.querySelectorAll("[data-hist]").forEach((btn) => {
     render();
   };
 });
-document.getElementById("q-evt").addEventListener("input", debounce((e) => {
-  qEvt = e.target.value.trim();
-  render();
-}, 120));
 document.getElementById("q-hist").addEventListener("input", debounce((e) => {
   qHist = e.target.value.trim();
   render();
@@ -920,19 +1054,52 @@ if (catalogQEl) {
 /* —— 地点搜索：定位小区/路段，判断与淹水圈是否重叠 —— */
 const placeSuggestEl = document.getElementById("place-suggest");
 const placeResultEl = document.getElementById("place-result");
+const placeResultModalEl = document.getElementById("place-result-modal");
+const placeResultBackdropEl = document.getElementById("place-result-backdrop");
 const placeQEl = document.getElementById("place-q");
 const placeGoBtn = document.getElementById("place-go");
 let placeLayer = null;
 let placeTimer = null;
 let placeReqId = 0;
-let lastGeocodeAt = 0;
 let locateMarker = null;
 
-function showPlaceMessage(title, text) {
-  hidePlaceUi();
-  placeResultEl.classList.remove("hidden");
-  placeResultEl.innerHTML = `<h3>${esc(title)}</h3><p>${esc(text)}</p>`;
+function bindPlaceResultActions() {
+  document.getElementById("place-result-close")?.addEventListener("click", () => closePlaceResult());
+  document.getElementById("place-clear")?.addEventListener("click", () => closePlaceResult({ clear: true }));
 }
+
+function openPlaceResult(html) {
+  hidePlaceUi();
+  placeResultEl.innerHTML = html;
+  placeResultEl.classList.remove("hidden");
+  placeResultModalEl.classList.remove("hidden");
+  placeResultModalEl.setAttribute("aria-hidden", "false");
+  bindPlaceResultActions();
+}
+
+function closePlaceResult({ clear = false } = {}) {
+  if (clear) clearPlaceLayer();
+  placeResultEl.classList.add("hidden");
+  placeResultEl.innerHTML = "";
+  placeResultModalEl.classList.add("hidden");
+  placeResultModalEl.setAttribute("aria-hidden", "true");
+}
+
+function showPlaceMessage(title, text) {
+  openPlaceResult(`
+    <div class="place-result-head">
+      <h3>${esc(title)}</h3>
+      <button type="button" class="place-result-close" id="place-result-close" aria-label="关闭">×</button>
+    </div>
+    <p>${esc(text)}</p>`);
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !placeResultModalEl.classList.contains("hidden")) {
+    closePlaceResult();
+  }
+});
+placeResultBackdropEl.addEventListener("click", () => closePlaceResult());
 
 document.getElementById("btn-locate").onclick = () => {
   if (!navigator.geolocation) {
@@ -957,16 +1124,6 @@ document.getElementById("btn-locate").onclick = () => {
 };
 document.getElementById("btn-fit").onclick = () => fitVisible([40, 40]);
 
-function haversineM(aLat, aLng, bLat, bLng) {
-  const R = 6371000;
-  const toR = (d) => d * Math.PI / 180;
-  const dLat = toR(bLat - aLat);
-  const dLng = toR(bLng - aLng);
-  const x = Math.sin(dLat / 2) ** 2
-    + Math.cos(toR(aLat)) * Math.cos(toR(bLat)) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(x));
-}
-
 function clearPlaceLayer() {
   if (placeLayer) {
     map.removeLayer(placeLayer);
@@ -979,11 +1136,95 @@ function hidePlaceUi() {
   placeSuggestEl.innerHTML = "";
 }
 
+function parseAmapLoc(location) {
+  if (!location) return null;
+  const [lng, lat] = String(location).split(",").map(Number);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return { lat, lng };
+}
+
+function amapItem(source, name, detail, lat, lng) {
+  return {
+    source,
+    name,
+    detail,
+    lat,
+    lng,
+    crs: "gcj",
+    ref: null,
+    pending: !Number.isFinite(lat) || !Number.isFinite(lng)
+  };
+}
+
+async function fetchAmapJson(path, params) {
+  const qs = new URLSearchParams({ city: "昆明", citylimit: "true", ...params });
+  const res = await fetch(`/api/amap/${path}?${qs}`);
+  if (!res.ok) throw new Error("amap_http_" + res.status);
+  const data = await res.json();
+  if (data.status !== "1") {
+    if (data.infocode === "10001" || /INVALID_USER_KEY|USERKEY/i.test(data.info || "")) {
+      throw new Error("amap_key");
+    }
+    if (data.info === "DAILY_QUERY_OVER_LIMIT") throw new Error("amap_quota");
+    return [];
+  }
+  return data;
+}
+
+async function searchAmapPlace(q, { limit = 8 } = {}) {
+  const data = await fetchAmapJson("place", {
+    keywords: q,
+    offset: String(limit),
+    extensions: "base"
+  });
+  return (data.pois || []).map((poi) => {
+    const loc = parseAmapLoc(poi.location);
+    return amapItem(
+      "高德检索",
+      poi.name,
+      [poi.adname, poi.address].filter(Boolean).join(" · "),
+      loc?.lat,
+      loc?.lng
+    );
+  }).filter((it) => !it.pending);
+}
+
+async function searchAmapTips(q, { limit = 8 } = {}) {
+  const data = await fetchAmapJson("tips", { keywords: q });
+  return (data.tips || []).slice(0, limit).map((tip) => {
+    const loc = parseAmapLoc(tip.location);
+    return amapItem(
+      "高德提示",
+      tip.name,
+      [tip.district, tip.address].filter(Boolean).join(" · "),
+      loc?.lat,
+      loc?.lng
+    );
+  });
+}
+
+async function resolvePlaceItem(item) {
+  if (!item.pending && Number.isFinite(item.lat) && Number.isFinite(item.lng)) return item;
+  const hits = await searchAmapPlace(item.name, { limit: 1 });
+  return hits[0] || null;
+}
+
+function showAmapConfigError() {
+  openPlaceResult(`
+    <div class="place-result-head">
+      <h3>地点检索暂不可用</h3>
+      <button type="button" class="place-result-close" id="place-result-close" aria-label="关闭">×</button>
+    </div>
+    <span class="verdict unknown">未配置高德 Key</span>
+    <p>需在服务器 <code>/workspace/kunming-flood-map/.env</code> 写入 <code>AMAP_WEB_KEY=你的Web服务Key</code> 后重启容器。Key 在<a href="https://console.amap.com/dev/key/app" target="_blank" rel="noopener">高德开放平台</a>申请，类型选「Web 服务」。</p>`);
+}
+
 function localPlaceHits(q) {
   const needle = q.trim().toLowerCase();
   if (needle.length < 1) return [];
   const out = [];
   EVENTS.forEach((p) => {
+    if (p._mergedInto) return;
     const blob = `${p.name} ${p.district} ${p.note || ""} ${p.source || ""}`.toLowerCase();
     if (blob.includes(needle)) {
       out.push({
@@ -1014,40 +1255,58 @@ function localPlaceHits(q) {
   return out.slice(0, 8);
 }
 
-async function geocodeKunming(q) {
-  const query = /昆明|云南/.test(q) ? q : `昆明 ${q}`;
-  const url = "https://nominatim.openstreetmap.org/search?"
-    + new URLSearchParams({
-      q: query,
-      format: "json",
-      limit: "6",
-      countrycodes: "cn",
-      "accept-language": "zh-CN",
-      viewbox: "102.45,25.25,103.05,24.75",
-      bounded: "0"
-    });
-  const res = await fetch(url, {
-    headers: { Accept: "application/json" }
+function mergePlaceHits(local, remote) {
+  const merged = [];
+  const seen = new Set();
+  [...local, ...remote].forEach((it) => {
+    const latKey = Number.isFinite(it.lat) ? it.lat.toFixed(4) : "?";
+    const lngKey = Number.isFinite(it.lng) ? it.lng.toFixed(4) : "?";
+    const key = `${it.name}|${latKey}|${lngKey}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    merged.push(it);
   });
-  if (!res.ok) throw new Error("geocode " + res.status);
-  const rows = await res.json();
-  return (rows || []).map((r) => ({
-    source: "地图检索",
-    name: (r.namedetails && (r.namedetails.name || r.namedetails["name:zh"]))
-      || (r.display_name || "").split(",")[0]
-      || q,
-    detail: r.display_name || "",
-    lat: Number(r.lat),
-    lng: Number(r.lon),
-    crs: "wgs",
-    ref: null
-  })).filter((r) => Number.isFinite(r.lat) && Number.isFinite(r.lng));
+  return merged;
+}
+
+function findNearestHits(lat, lng, maxDistM = PLACE_NEAR_SCAN_M, limit = 6) {
+  const hits = [];
+  EVENTS.forEach((p) => {
+    if (p._mergedInto) return;
+    const d = haversineM(lat, lng, p._ll[0], p._ll[1]);
+    if (d <= maxDistM) {
+      hits.push({
+        kind: "event",
+        level: "scan",
+        dist: Math.round(d),
+        title: p.name,
+        sub: `${EVT_LABEL[p.evt]} · ${KIND_LABEL[p.kind]} · ${p.depth}`,
+        point: p
+      });
+    }
+  });
+  HIST.forEach((p) => {
+    const d = haversineM(lat, lng, p._ll[0], p._ll[1]);
+    if (d <= maxDistM) {
+      hits.push({
+        kind: "hist",
+        level: "scan",
+        dist: Math.round(d),
+        title: p.name,
+        sub: `${CAT[p.cat]} · ${p.depth}`,
+        point: p
+      });
+    }
+  });
+  hits.sort((a, b) => a.dist - b.dist);
+  return hits.slice(0, limit);
 }
 
 function scoreOverlap(ll) {
   const [lat, lng] = ll;
   const hits = [];
   EVENTS.forEach((p) => {
+    if (p._mergedInto) return;
     const d = haversineM(lat, lng, p._ll[0], p._ll[1]);
     if (d <= EVENT_RING_R + EVENT_NEAR_PAD) {
       hits.push({
@@ -1078,7 +1337,7 @@ function scoreOverlap(ll) {
   const best = hits[0];
   let verdict = "clear";
   let label = "库内未见直接重叠";
-  let tip = "不等于绝对安全：公开点位是路口近似，小区内部低洼仍可能积水。";
+  let tip = "已定位到该处；下方列出周边最近积水标点（如有）。不等于绝对安全。";
   if (best && best.level === "hit") {
     verdict = "hit";
     label = best.kind === "hist" && best.point.cat === "safe"
@@ -1104,11 +1363,71 @@ function ensurePlaceVisible(hits) {
   });
 }
 
+function boundsAroundMeters(lat, lng, radiusM) {
+  const dLat = radiusM / 111320;
+  const dLng = radiusM / (111320 * Math.cos(lat * Math.PI / 180));
+  return L.latLngBounds([lat - dLat, lng - dLng], [lat + dLat, lng + dLng]);
+}
+
+function placeFocusPadding() {
+  const sz = map.getSize();
+  return [
+    Math.round(sz.y * 0.26),
+    Math.round(sz.x * 0.12),
+    Math.round(isMobile() ? sz.y * 0.24 : sz.y * 0.14),
+    Math.round(sz.x * 0.12)
+  ];
+}
+
+function fitPlaceView(ll, overlapHits) {
+  const pad = placeFocusPadding();
+  const focusBounds = boundsAroundMeters(ll[0], ll[1], PLACE_FOCUS_RADIUS_M);
+  const tight = overlapHits.filter((h) => h.level === "hit" || (h.level === "near" && h.dist <= 450));
+  if (tight.length) {
+    const bounds = L.latLngBounds([ll]);
+    tight.slice(0, 4).forEach((h) => bounds.extend(h.point._ll));
+    map.flyToBounds(bounds.pad(0.04), { padding: pad, duration: 0.55, maxZoom: 17 });
+    return;
+  }
+  map.flyToBounds(focusBounds, { padding: pad, duration: 0.55, maxZoom: 17 });
+}
+
 function focusPlace(item) {
   hidePlaceUi();
+  const run = async () => {
+    let place = item;
+    if (place.pending || !Number.isFinite(place.lat)) {
+      placeGoBtn.disabled = true;
+      placeGoBtn.textContent = "定位中";
+      try {
+        place = await resolvePlaceItem(item);
+      } catch (e) {
+        if (e.message === "amap_key") {
+          showAmapConfigError();
+          return;
+        }
+        showPlaceMessage("定位失败", "未能解析该地点坐标，请换更完整的地名重试。");
+        return;
+      } finally {
+        placeGoBtn.disabled = false;
+        placeGoBtn.textContent = "查附近";
+      }
+      if (!place) {
+        showPlaceMessage("定位失败", `未能解析「${item.name}」的坐标，请换更完整的地名。`);
+        return;
+      }
+    }
+    paintFocusPlace(place);
+  };
+  run();
+}
+
+function paintFocusPlace(item) {
   const ll = item.crs === "wgs" ? toMapLL(item.lat, item.lng, "wgs") : [item.lat, item.lng];
   const scored = scoreOverlap(ll);
-  ensurePlaceVisible(scored.hits);
+  const nearest = scored.hits.length ? [] : findNearestHits(ll[0], ll[1]);
+  const visibleHits = scored.hits.length ? scored.hits : nearest;
+  ensurePlaceVisible(visibleHits);
   clearPlaceLayer();
   const probe = L.circle(ll, {
     radius: 90,
@@ -1133,32 +1452,34 @@ function focusPlace(item) {
     scored.tip
   ], ll));
   placeLayer = L.layerGroup([probe, marker]).addTo(map);
-  map.flyTo(ll, 15, { duration: 0.55 });
-  setTimeout(() => marker.openPopup(), 400);
+  fitPlaceView(ll, scored.hits);
 
-  const maxScope = Math.max(EVENT_RING_R + EVENT_NEAR_PAD, ...HIST.map((p) => (p.r || HIST_DEFAULT_R) + HIST_NEAR_PAD));
-  const list = scored.hits.length
-    ? `<ul>${scored.hits.map((h) =>
+  let listHtml;
+  if (scored.hits.length) {
+    listHtml = `<ul>${scored.hits.map((h) =>
       `<li><strong>${esc(h.title)}</strong> · ${esc(h.sub)} · 约 ${h.dist} m</li>`
-    ).join("")}</ul>`
-    : `<p>落点周边 ${Math.round(maxScope / 10) * 10} m 内暂无库内标点。</p>`;
+    ).join("")}</ul>`;
+  } else if (nearest.length) {
+    listHtml = `<p>落点本身库内未见积水圈；周边 ${(PLACE_NEAR_SCAN_M / 1000).toFixed(1)} km 内最近标点：</p><ul>${nearest.map((h) =>
+      `<li><strong>${esc(h.title)}</strong> · ${esc(h.sub)} · 约 ${h.dist} m</li>`
+    ).join("")}</ul>`;
+  } else {
+    listHtml = `<p>周边 ${Math.round(PLACE_NEAR_SCAN_M / 100) * 100} m 内暂无库内标点；地图已定位到此处，可手动拖动查看更远区域。</p>`;
+  }
 
-  placeResultEl.classList.remove("hidden");
-  placeResultEl.innerHTML = `
-    <h3>${esc(item.name)}</h3>
+  openPlaceResult(`
+    <div class="place-result-head">
+      <h3>${esc(item.name)}</h3>
+      <button type="button" class="place-result-close" id="place-result-close" aria-label="关闭">×</button>
+    </div>
     <span class="verdict ${scored.verdict}">${esc(scored.label)}</span>
     <p>${esc(scored.tip)}</p>
     <p style="font-size:12px;color:#78716c">${esc(item.source)}${item.detail ? " · " + esc(item.detail) : ""}</p>
-    ${list}
+    ${listHtml}
     <div class="place-actions">
       <button type="button" id="place-clear">清除定位</button>
       <a href="https://uri.amap.com/marker?position=${ll[1]},${ll[0]}&name=${encodeURIComponent(item.name)}" target="_blank" rel="noopener" style="font-size:12px;align-self:center">高德打开</a>
-    </div>`;
-  document.getElementById("place-clear").onclick = () => {
-    clearPlaceLayer();
-    placeResultEl.classList.add("hidden");
-    placeResultEl.innerHTML = "";
-  };
+    </div>`);
   if (isMobile()) setSheetOpen(false);
 }
 
@@ -1176,56 +1497,53 @@ function renderSuggest(items) {
   });
 }
 
-async function runPlaceSearch(q, { autoFocus = false } = {}) {
+async function runPlaceSearch(q, { autoFocus = false, useTips = false } = {}) {
   const query = q.trim();
   if (!query) return;
   const req = ++placeReqId;
   placeGoBtn.disabled = true;
   placeGoBtn.textContent = "检索中";
-  placeResultEl.classList.add("hidden");
+  closePlaceResult();
   try {
     const local = localPlaceHits(query);
     let remote = [];
-    /* Nominatim 公共接口限速 ≤1 次/秒；间隔不足时只用库内结果 */
-    if (Date.now() - lastGeocodeAt >= 1100) {
-      lastGeocodeAt = Date.now();
-      try {
-        remote = await geocodeKunming(query);
-      } catch (_) {
-        /* 外网检索失败时仍可用库内匹配 */
+    try {
+      remote = useTips
+        ? await searchAmapTips(query)
+        : await searchAmapPlace(query);
+    } catch (e) {
+      if (e.message === "amap_key") {
+        if (!local.length) showAmapConfigError();
+        else renderSuggest(local);
+        return;
       }
     }
     if (req !== placeReqId) return;
-    const merged = [];
-    const seen = new Set();
-    [...local, ...remote].forEach((it) => {
-      const key = `${it.name}|${it.lat.toFixed(4)}|${it.lng.toFixed(4)}`;
-      if (seen.has(key)) return;
-      seen.add(key);
-      merged.push(it);
-    });
+    const merged = mergePlaceHits(local, remote);
     if (!merged.length) {
       hidePlaceUi();
-      placeResultEl.classList.remove("hidden");
-      placeResultEl.innerHTML = `
-        <h3>未找到「${esc(query)}」</h3>
+      openPlaceResult(`
+        <div class="place-result-head">
+          <h3>未找到「${esc(query)}」</h3>
+          <button type="button" class="place-result-close" id="place-result-close" aria-label="关闭">×</button>
+        </div>
         <span class="verdict unknown">暂无定位结果</span>
-        <p>可换正式小区名、道路名，或加方位词（如「华润润府 官渡」）。库内路段名也可直接搜。</p>`;
+        <p>可换正式地名或加区县（如「某某小区 官渡」）。</p>`);
       return;
     }
     renderSuggest(merged);
-    if (autoFocus) focusPlace(merged[0]);
+    if (autoFocus) focusPlace(merged.find((it) => !it.pending) || merged[0]);
   } finally {
     if (req === placeReqId) {
       placeGoBtn.disabled = false;
-      placeGoBtn.textContent = "查淹水";
+      placeGoBtn.textContent = "查附近";
     }
   }
 }
 
 document.getElementById("place-search-form").addEventListener("submit", (e) => {
   e.preventDefault();
-  runPlaceSearch(placeQEl.value, { autoFocus: true });
+  runPlaceSearch(placeQEl.value, { autoFocus: true, useTips: false });
 });
 placeQEl.addEventListener("input", () => {
   const q = placeQEl.value.trim();
@@ -1236,10 +1554,42 @@ placeQEl.addEventListener("input", () => {
   }
   const local = localPlaceHits(q);
   if (local.length) renderSuggest(local);
-  placeTimer = setTimeout(() => runPlaceSearch(q, { autoFocus: false }), 450);
+  placeTimer = setTimeout(() => runPlaceSearch(q, { autoFocus: false, useTips: true }), 350);
 });
 document.addEventListener("click", (e) => {
   if (!document.getElementById("place-search").contains(e.target)) hidePlaceUi();
+});
+
+function countVisibleEvtMatches(q) {
+  if (!q) return 1;
+  const needle = q.toLowerCase();
+  return EVENTS.filter((p) => {
+    if (evtF !== "all" && p.evt !== evtF) return false;
+    if (kindF !== "all" && p.kind !== kindF) return false;
+    return (p.name + p.district + p.note + p.source + p.duration + p.depth).toLowerCase().includes(needle);
+  }).length;
+}
+
+function locateDestination(q) {
+  const query = String(q || "").trim();
+  if (query.length < 2) return;
+  placeQEl.value = query;
+  if (isMobile()) setSheetOpen(false);
+  runPlaceSearch(query, { autoFocus: true, useTips: false });
+}
+
+document.getElementById("q-evt").addEventListener("input", debounce((e) => {
+  qEvt = e.target.value.trim();
+  render();
+  if (qEvt.length >= 2 && countVisibleEvtMatches(qEvt) === 0) {
+    locateDestination(qEvt);
+  }
+}, 400));
+document.getElementById("q-evt").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    locateDestination(e.target.value);
+  }
 });
 
 /* —— 启动 —— */

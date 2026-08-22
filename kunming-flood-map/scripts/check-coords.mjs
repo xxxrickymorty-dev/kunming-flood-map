@@ -9,7 +9,7 @@ const file = path.join(root, "html/js/data.js");
 const src = fs.readFileSync(file, "utf8");
 
 const KM = { lat: [24.7, 25.25], lng: [102.45, 103.05] };
-/* 收紧水面框：官渡古镇 Y1 24.958,102.748 不该报警；滇池里的 24.921,102.658 必须报警。 */
+/* 收紧水面框：官渡古镇 Y1 24.9557,102.7585 不该报警；滇池里的 24.921,102.658 必须报警。 */
 const DIANCHI = { lat: [24.75, 24.96], lng: [102.625, 102.72] };
 
 const rows = [];
@@ -39,9 +39,9 @@ for (const p of rows) {
     console.error(`LAKE? ${p.layer} ${p.id} ${p.name} ${p.lat},${p.lng} ${amap}`);
   }
 }
-if (inBox({ lat: 24.958, lng: 102.748 }, DIANCHI)) {
+if (inBox({ lat: 24.9557, lng: 102.7585 }, DIANCHI)) {
   warn += 1;
-  console.error("LAKE? false-positive: 官渡古镇 24.958,102.748 should be outside Dianchi box");
+  console.error("LAKE? false-positive: 官渡古镇 Y1 24.9557,102.7585 should be outside Dianchi box");
 }
 if (!inBox({ lat: 24.921, lng: 102.658 }, DIANCHI)) {
   warn += 1;

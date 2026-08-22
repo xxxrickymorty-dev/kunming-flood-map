@@ -70,7 +70,7 @@ ssh -i $key ubuntu@43.180.135.43 "tar -xzf /tmp/kfm.tar.gz -C /workspace/kunming
 
 ## Content edit checklist (before publish)
 
-- 点位坐标：先读并执行 `.cursor/skills/kunming-flood-coords/SKILL.md`。底图高德 **GCJ-02**；`data.js` 里存的就是 GCJ（`POINT_CRS = "gcj"`，勿再 WGS→GCJ）；浏览器 GPS 用 `"wgs"` 转换。微调用 `COORD_NUDGE`。
+- **强制**：任何 `data.js` 点位新增/改坐标，先 **kunming-flood-verify** 全流程（含用户高德 POI 对照），再 **kunming-flood-coords** 写库，最后本 skill 发布。
 - 从 OSM/Nominatim 取的是 **WGS84**，入库前必须转 GCJ-02（`app.js` 里的 `wgs84ToGcj02`）；百度是 **BD-09**，不能直接抄。落点后跑 `node kunming-flood-map/scripts/check-coords.mjs`。
 - CSP / nginx：`deploy/nginx.conf` 已放行高德瓦片与 Nominatim；改 CSP 后随包上传并重启容器生效。
 - file:// 直开可用（相对路径 + data.js 全局变量），仅 districts.geojson 与 Nominatim 需网络。

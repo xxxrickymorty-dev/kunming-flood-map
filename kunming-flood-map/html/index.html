@@ -47,7 +47,7 @@
             <button data-kind="slow">缓行</button>
             <button data-kind="ctrl">管制/未测深</button>
           </div>
-          <input class="search" id="q-evt" type="search" placeholder="搜路段、区县、来源" />
+          <input class="search" id="q-evt" type="search" placeholder="搜路段或目的地（无积水点匹配时自动定位地图）" enterkeyhint="search" />
           <div class="list" id="list-evt"></div>
         </aside>
         <aside class="col hist" id="panel-hist">
@@ -70,7 +70,40 @@
           <div class="list" id="list-hist"></div>
         </aside>
       </div>
-      <div id="map"></div>
+      <div class="map-stage">
+        <div id="map"></div>
+        <div class="map-overlay-top" id="map-overlay-top">
+          <div class="place-search" id="place-search">
+            <p class="place-search-label">搜目的地 · 无积水也会定位</p>
+            <form class="place-search-form" id="place-search-form" autocomplete="off">
+              <input id="place-q" type="search" placeholder="翠湖、万象城、某小区…" enterkeyhint="search" />
+              <button type="submit" id="place-go">查附近</button>
+            </form>
+            <div class="place-suggest hidden" id="place-suggest" role="listbox"></div>
+          </div>
+          <div class="map-tools" id="map-tools">
+            <button type="button" id="btn-locate">我的位置</button>
+            <button type="button" id="btn-fit">看全图</button>
+          </div>
+        </div>
+        <div class="place-result-modal hidden" id="place-result-modal" aria-hidden="true">
+          <button type="button" class="place-result-backdrop" id="place-result-backdrop" aria-label="关闭"></button>
+          <div class="place-result hidden" id="place-result" role="dialog" aria-modal="true"></div>
+        </div>
+        <div class="legend" id="legend">
+          <div id="legend-evt">
+            <div><span class="swatch drop s-closed"></span>断交 / 重度</div>
+            <div><span class="swatch s-mid"></span>中度未断交</div>
+            <div><span class="swatch sq s-slow"></span>缓行</div>
+            <div><span class="swatch sq s-ctrl"></span>管制 / 未测深</div>
+          </div>
+          <div id="legend-hist" class="hidden">
+            <div><span class="swatch diamond s-hist"></span>常年易淹</div>
+            <div><span class="swatch s-ugc"></span>用户补点·易淹</div>
+            <div>蓝虚线圈 · 大致影响范围</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="report hidden" id="view-report">
@@ -283,32 +316,6 @@
           <button type="button" class="jump-map" data-jump="0818">去看 8.18 地图 →</button>
         </p>
       </div>
-    </div>
-  </div>
-
-  <div class="place-search" id="place-search">
-    <form class="place-search-form" id="place-search-form" autocomplete="off">
-      <input id="place-q" type="search" placeholder="搜小区 / 路段是否靠近淹水区，如：华润润府、金泰国际…" enterkeyhint="search" />
-      <button type="submit" id="place-go">查淹水</button>
-    </form>
-    <div class="place-suggest hidden" id="place-suggest" role="listbox"></div>
-    <div class="place-result hidden" id="place-result"></div>
-  </div>
-  <div class="map-tools" id="map-tools">
-    <button type="button" id="btn-locate">我的位置</button>
-    <button type="button" id="btn-fit">看全图</button>
-  </div>
-  <div class="legend" id="legend">
-    <div id="legend-evt">
-      <div><span class="swatch drop s-closed"></span>断交 / 重度</div>
-      <div><span class="swatch s-mid"></span>中度未断交</div>
-      <div><span class="swatch sq s-slow"></span>缓行</div>
-      <div><span class="swatch sq s-ctrl"></span>管制 / 未测深</div>
-    </div>
-    <div id="legend-hist" class="hidden">
-      <div><span class="swatch diamond s-hist"></span>常年易淹</div>
-      <div><span class="swatch s-ugc"></span>用户补点·易淹</div>
-      <div>蓝虚线圈 · 大致影响范围</div>
     </div>
   </div>
 

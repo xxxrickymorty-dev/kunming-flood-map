@@ -3,13 +3,18 @@ name: kunming-flood-coords
 description: >-
   Verifies and stores Kunming flood-map pin coordinates as Gaode GCJ-02.
   Use when adding or moving points in data.js, geocoding 积水/淹水路段, converting
-  lat/lng, or when a pin lands in 滇池/wrong village. Trigger terms: 坐标, GCJ-02,
-  高德, 经纬度, Nominatim, 百度, WGS84, BD-09, data.js 点位.
+  lat/lng, or when a pin lands in 滇池/wrong village. ALWAYS run kunming-flood-verify
+  after coords are chosen and before writing/publishing. Trigger: 坐标, GCJ-02, 高德,
+  经纬度, Nominatim, data.js 点位.
 ---
 
 # 昆明积水地图 · 坐标核验
 
 底图是高德瓦片，**GCJ-02**。`kunming-flood-map/html/js/data.js` 里的 `lat`/`lng` 必须是 GCJ，入库后不再二次加密（`POINT_CRS = "gcj"`）。
+
+## 标注前强制
+
+**选定坐标后、写入 data.js 前，必须执行 `kunming-flood-verify` 全部步骤。** 用户给了高德截图/POI 时，以 POI 全名为落点依据，禁止用路名猜东段/中段。
 
 ## 上次是怎么错的（禁止再犯）
 
@@ -55,8 +60,9 @@ node kunming-flood-map/scripts/check-coords.mjs
 |---|---|---|
 | 混团公路 | 海口混团村 / 滇池西岸 | 高德「团结公路」或「昆团公路」 |
 | 十一家具 | 随便一个家具城 | 广福路×前卫西路，奥宸财富广场 |
+| 福发路 | 福发路中段/东段 | 用户 POI「官南大道与福发路交叉口」 |
 | 经开 | 单独一个区 | 行政区并入官渡 |
 
 ## 发布
 
-坐标改完再按 `kunming-flood-coords` 的检查和 `kunming-flood-deploy` 上线。
+坐标改完按 **kunming-flood-verify** 做完整检查（用户问「对吗」或改点后必走），再按 **kunming-flood-deploy** 上线。
