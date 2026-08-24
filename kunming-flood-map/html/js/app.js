@@ -12,10 +12,8 @@ function debounce(fn, ms) {
 
 /* —— 坐标系：底图高德 GCJ-02 ——
  * 点位 lat/lng：国内地图/高德取点 → "gcj"（默认，不再二次加密）
- * 浏览器 GPS / 国际坐标 → "wgs"（做 WGS84→GCJ）
- * 若仍整体偏移，可微调 COORD_NUDGE（单位：度，约 0.001 ≈ 100m） */
+ * 浏览器 GPS / 国际坐标 → "wgs"（做 WGS84→GCJ） */
 const POINT_CRS = "gcj";
-const COORD_NUDGE = { lat: 0, lng: 0 };
 
 function outOfChina(lng, lat) {
   return lng < 72.004 || lng > 137.8347 || lat < 0.8293 || lat > 55.8271;
@@ -55,7 +53,7 @@ function toMapLL(lat, lng, from) {
     outLat = gLat;
     outLng = gLng;
   }
-  return [outLat + COORD_NUDGE.lat, outLng + COORD_NUDGE.lng];
+  return [outLat, outLng];
 }
 
 /* —— 数据装载：hist 里 ref 的点坐标继承对应事件点 —— */
@@ -557,23 +555,20 @@ HIST.forEach((p) => {
 /* —— 视图状态 —— */
 let evtF = "all", kindF = "all", histF = "all", qEvt = "", qHist = "", currentView = "all", districtF = null;
 
+/* 区县名 → 行政区键。功能区（高新/度假/经开/机场）收敛到所属行政区，
+   依据 km.gov.cn 行政区划标准（高新→五华、度假→西山、经开/机场→官渡）。 */
+const DISTRICT_ALIASES = [
+  ["高新", "五华"], ["五华", "五华"],
+  ["度假", "西山"], ["西山", "西山"],
+  ["经开", "官渡"], ["机场", "官渡"], ["官渡", "官渡"],
+  ["盘龙", "盘龙"], ["呈贡", "呈贡"], ["晋宁", "晋宁"],
+  ["富民", "富民"], ["宜良", "宜良"], ["石林", "石林"],
+  ["嵩明", "嵩明"], ["禄劝", "禄劝"], ["寻甸", "寻甸"],
+  ["东川", "东川"], ["安宁", "安宁"],
+];
 function districtKey(d) {
   const s = String(d || "");
-  if (/五华|高新/.test(s)) return "五华";
-  if (/盘龙/.test(s)) return "盘龙";
-  if (/西山|度假/.test(s)) return "西山";
-  if (/东川/.test(s)) return "东川";
-  if (/呈贡/.test(s)) return "呈贡";
-  if (/晋宁/.test(s)) return "晋宁";
-  if (/富民/.test(s)) return "富民";
-  if (/宜良/.test(s)) return "宜良";
-  if (/石林/.test(s)) return "石林";
-  if (/嵩明/.test(s)) return "嵩明";
-  if (/禄劝/.test(s)) return "禄劝";
-  if (/寻甸/.test(s)) return "寻甸";
-  if (/安宁/.test(s)) return "安宁";
-  /* 经开、长水机场行政上属官渡；旧标签「机场向」并入 */
-  if (/官渡|经开|机场/.test(s)) return "官渡";
+  for (const [sub, key] of DISTRICT_ALIASES) if (s.includes(sub)) return key;
   return s;
 }
 
@@ -853,11 +848,14 @@ function paintDistrictTierList(ev, hi) {
   }).join("");
 }
 
+function bumpDistrictCounts(arr, store) {
+  arr.forEach((p) => { const k = districtKey(p.district); if (store[k] != null) store[k]++; });
+}
 function refreshDistrictStats() {
   const ev = {}, hi = {};
   DISTRICTS.forEach((k) => { ev[k] = 0; hi[k] = 0; });
-  EVENTS.forEach((p) => { const k = districtKey(p.district); if (ev[k] != null) ev[k]++; });
-  HIST.forEach((p) => { const k = districtKey(p.district); if (hi[k] != null) hi[k]++; });
+  bumpDistrictCounts(EVENTS, ev);
+  bumpDistrictCounts(HIST, hi);
   const shown = DISTRICTS.filter((k) => ev[k] + hi[k] > 0);
   paintDistrictTierList(ev, hi);
   const taglines = {
@@ -920,7 +918,10 @@ function viewFromHash() {
   const m = location.hash.match(/^#v=(.+)$/);
   if (!m) return null;
   try {
-    const v = decodeURIComponent(m[1]);
+    const v0 = decodeURIComponent(m[1]);
+    /* 功能区别名 → 行政区：经开区行政上属官渡区（见 km.gov.cn 行政区划标准） */
+    const ALIASES = { "d-经开": "d-官渡" };
+    const v = ALIASES[v0] || v0;
     return VALID_VIEWS.has(v) ? v : null;
   } catch (_) {
     return null;

@@ -128,10 +128,10 @@ window.FLOOD_DATA = {
     { n: "H20", cat: "new", district: "安宁", name: "太平新城 · 万辉星城", depth: "车辆被困纪录", note: "在安宁，不在主城东边。7.17 官方通报同片。", ref: "L1", r: 350 },
     { n: "H21", cat: "new", district: "安宁", name: "玉龙湾隧道", depth: "车辆被困纪录", note: "安宁玉龙湾方向。7.17 景区因淹关闭。", ref: "L2", r: 220 },
     /* —— 用户反馈补点（不写反馈人昵称）—— */
-    { n: "H22", cat: "ugc", district: "五华高新", name: "金泰国际一带", depth: "用户：非常容易淹", note: "楼盘在黄土坡立交旁滇缅大道×西二环。官方雨污分流改造名单含金泰国际；同片滇缅大道 2026-07-16 曾 >50cm 断交。", lat: 25.0634, lng: 102.6734, r: 280 },
-    { n: "H23", cat: "ugc", district: "五华高新", name: "戛纳小镇一带", depth: "用户：非常容易淹", note: "海源中路 1629 号一带。高新西区雨污分流改造名单含戛纳小镇；海源北路–海源中路有淹水点改造工程。", lat: 25.0624, lng: 102.664, r: 280 },
-    { n: "H24", cat: "ugc", district: "五华高新", name: "海源北路", depth: "用户：易淹", note: "公开报道多次写海源北路至海源中路雨季淹水及下穿昆石铁路排水改造。", lat: 25.0749, lng: 102.6543, r: 320 },
-    { n: "H25", cat: "ugc", district: "五华高新", name: "上高架路口（黄土坡立交向）", depth: "用户：非常容易淹", note: "西边上高架路口。按黄土坡立交/滇缅大道上桥一带落点；具体岔口名待再确认。", lat: 25.068, lng: 102.667, r: 220 },
+    { n: "H22", cat: "ugc", district: "五华", name: "金泰国际一带", depth: "用户：非常容易淹", note: "楼盘在黄土坡立交旁滇缅大道×西二环（高新区西区，行政属五华）。官方雨污分流改造名单含金泰国际；同片滇缅大道 2026-07-16 曾 >50cm 断交。", lat: 25.0634, lng: 102.6734, r: 280 },
+    { n: "H23", cat: "ugc", district: "五华", name: "戛纳小镇一带", depth: "用户：非常容易淹", note: "海源中路 1629 号一带（高新区西区，行政属五华）。高新西区雨污分流改造名单含戛纳小镇；海源北路–海源中路有淹水点改造工程。", lat: 25.0624, lng: 102.664, r: 280 },
+    { n: "H24", cat: "ugc", district: "五华", name: "海源北路", depth: "用户：易淹", note: "公开报道多次写海源北路至海源中路雨季淹水及下穿昆石铁路排水改造（高新区西区，行政属五华）。", lat: 25.0749, lng: 102.6543, r: 320 },
+    { n: "H25", cat: "ugc", district: "五华", name: "上高架路口（黄土坡立交向）", depth: "用户：非常容易淹", note: "西边上高架路口。按黄土坡立交/滇缅大道上桥一带落点；具体岔口名待再确认。", lat: 25.068, lng: 102.667, r: 220 },
     { n: "H26", cat: "ugc", district: "官渡", name: "万象城 · 环城南路一带", depth: "用户：路面积水深（配图）", note: "公开笔记配图可见主干道深积水。地址为官渡区吴井街道环城南路1号。8.18 消防亦点名该片排涝。不等于商场室内进水。", lat: 25.0292, lng: 102.7337, r: 320 },
     { n: "H27", cat: "ugc", district: "西山", name: "永昌小区（环城南路816号）", depth: "用户：小腿深，整片爱淹", note: "环城南路南侧、五华体育馆东、华昌路—云兴路一带；云纺商圈对面。与历史永昌片区、华昌×采莲同片低洼。", lat: 25.0172, lng: 102.7056, r: 280 },
     { n: "H28", cat: "ugc", district: "五华", name: "龙泉路 · 红云 / 高教小区一带", depth: "用户：深水路况照片；历史断交", note: "龙泉路红云片为长虫山山洪下泄区；龙泉路高教小区/昆八中段有断交通报、常年淹水改造记录。坐标取龙泉路昆八中段近似。", lat: 25.0944, lng: 102.7199, r: 380 }
@@ -182,7 +182,7 @@ window.FLOOD_DATA = {
     { user: "小红书用户", place: "会展 / 度假区 / 眠山 / 人民西路西苑立交", status: "负例不入库", pin: "", district: "西山", noteTitle: "昆明威尼斯-以后不能租这些地方", url: "https://www.xiaohongshu.com/explore/6a843d890000000008011abe" },
     { user: "小红书用户", place: "南二环下层（16:00 称正常）", status: "负例不入库", pin: "", district: "官渡", noteTitle: "路况更新（水务局）", url: "https://www.xiaohongshu.com/explore/6a83cd52000000002701f21c" },
     { user: "小红书用户", place: "同德（六月，不是 8.18）", status: "负例不入库", pin: "", district: "盘龙", noteTitle: "水深的一天", url: "https://www.xiaohongshu.com/explore/6a83f152000000002c006fd3" },
-    { user: "小红书用户", place: "万象城本体（附近没看到）", status: "负例不入库", pin: "F1", district: "官渡", noteTitle: "给我干哪来了", url: "https://www.xiaohongshu.com/explore/6a83a95a0000000028006e5b" },
+    { user: "小红书用户", place: "万象城本体（附近没看到）", status: "负例不入库", pin: "", district: "官渡", noteTitle: "给我干哪来了", url: "https://www.xiaohongshu.com/explore/6a83a95a0000000028006e5b" },
     { user: "用户反馈", place: "珥季路 · 广福路至如意中路段", status: "已入库", pin: "A7", district: "官渡", noteTitle: "8.3 双向交通管制", url: "" },
     { user: "用户反馈", place: "广福路 · 世纪城西南门（东向西）", status: "已入库", pin: "A8", district: "官渡", noteTitle: "8.3 仅中间两车道", url: "" },
     { user: "用户反馈", place: "广福路 · 新亚洲体育城段（坐标修正）", status: "已入库", pin: "U17", district: "官渡", noteTitle: "落点改至广福路体育城公交站一带", url: "https://www.xiaohongshu.com/explore/6a83cd52000000002701f21c" },

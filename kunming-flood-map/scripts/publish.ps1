@@ -14,6 +14,13 @@ $siteHost = ($target -split '@')[1]
 $remoteDir = "/workspace/kunming-flood-map"
 $port = 8088
 
+# 发布前坐标校验（CONTEXT：凡改 data.js 坐标须先 verify）
+if (-not $env:KFM_SKIP_CHECK) {
+  Write-Host "运行坐标校验 scripts/check-coords.mjs ..."
+  node (Join-Path $root "scripts\check-coords.mjs")
+  if ($LASTEXITCODE -ne 0) { throw "坐标校验未通过（check-coords.mjs 报错），发布中止；设置 `$env:KFM_SKIP_CHECK=1` 可跳过。" }
+}
+
 if (-not (Test-Path (Join-Path $htmlDir "index.html"))) { throw "缺少 $htmlDir\index.html" }
 if (-not (Test-Path (Join-Path $htmlDir "js\app.js"))) { throw "缺少 $htmlDir\js\app.js" }
 if (-not (Test-Path (Join-Path $htmlDir "js\data.js"))) { throw "缺少 $htmlDir\js\data.js" }
