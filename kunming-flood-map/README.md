@@ -1,6 +1,6 @@
 # 昆明积水地图 · kunming-flood-map
 
-协作者请先读 **[合作指南.md](./合作指南.md)**（数据模型、操作思路、Skills、Git 协作）。
+协作者请先读仓库根 **[../AGENTS.md](../AGENTS.md)**，发布细节见 `.cursor/skills/kunming-flood-deploy/SKILL.md`。
 
 ## 线上
 
@@ -13,7 +13,7 @@
 ```
 kunming-flood-map/
   docker-compose.yml
-  deploy/nginx.conf
+  deploy/nginx.conf.template
   html/index.html
   html/vendor/          # Leaflet 本地资源
   scripts/publish.ps1
@@ -25,6 +25,11 @@ kunming-flood-map/
 .\kunming-flood-map\scripts\publish.ps1
 ```
 
-会自动：同步根目录 `昆明积水地图-0818.html` → `html/index.html`（Leaflet 改 `/vendor/`）→ 上传 `/workspace/kunming-flood-map` → 重载 Docker nginx。
+脚本会按以下流程发布（**无「同步根目录旧 html」步骤**，那个文件是历史跳转页，已非源）：
 
-Agent 发布流程见：`.cursor/skills/kunming-flood-deploy/SKILL.md`（以及个人 skill `~/.cursor/skills/kunming-flood-deploy`）。
+1. 在仓库根打包 `docker-compose.yml` + `html/` + `deploy/` 为 tar.gz；
+2. 通过 SSH（私钥由维护者私发，勿提交仓库）`scp` 到服务器 `/tmp`；
+3. `ssh` 解包到 `/workspace/kunming-flood-map`，并执行 `docker compose up -d --force-recreate`（html/ 与 nginx.conf 是 bind mount，换 inode 必须 force-recreate，仅 reload 不够）；
+4. 输出 `done <site-url> status=200` 后，提醒访问者 Ctrl+F5 强刷。
+
+Agent 发布流程见个人 skill `~/.cursor/skills/kunming-flood-deploy`（不在本仓库，由维护者私发）。

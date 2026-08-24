@@ -1,12 +1,16 @@
-﻿# 发布昆明积水地图到 43.180.135.43:8088
+﻿# 发布昆明积水地图到线上 VPS（地址 / 凭据通过环境变量注入，勿写死在仓库）
 # 源 = kunming-flood-map/（html/ + deploy/ + docker-compose.yml）
 # 根目录 昆明积水地图-0818.html 只是跳转页，不再参与发布。
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $PSScriptRoot
 $htmlDir = Join-Path $root "html"
-$key = "$env:USERPROFILE\.ssh\yanleme-4h8g.pem"
-$target = "ubuntu@43.180.135.43"
+# 部署凭据由维护者私发，通过环境变量注入，勿写入仓库
+$key = $env:KFM_DEPLOY_KEY
+if (-not $key) { throw "未设置环境变量 KFM_DEPLOY_KEY（部署私钥路径），例如 `$env:KFM_DEPLOY_KEY = '$env:USERPROFILE\.ssh\your-key.pem'`" }
+$target = $env:KFM_DEPLOY_HOST
+if (-not $target) { throw "未设置环境变量 KFM_DEPLOY_HOST（形如 user@host）" }
+$siteHost = ($target -split '@')[1]
 $remoteDir = "/workspace/kunming-flood-map"
 $port = 8088
 
@@ -49,8 +53,8 @@ if ($LASTEXITCODE -ne 0) { throw "远端部署失败" }
 Remove-Item $tar -ErrorAction SilentlyContinue
 
 try {
-    $r = Invoke-WebRequest -Uri "http://43.180.135.43:$port/" -UseBasicParsing -TimeoutSec 15
-    Write-Host "done http://43.180.135.43:$port/ status=$($r.StatusCode)"
+    $r = Invoke-WebRequest -Uri "http://${siteHost}:$port/" -UseBasicParsing -TimeoutSec 15
+    Write-Host "done http://${siteHost}:$port/ status=$($r.StatusCode)"
 } catch {
     Write-Host "deployed but local check failed: $($_.Exception.Message)"
 }
