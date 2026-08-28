@@ -10,6 +10,15 @@ function debounce(fn, ms) {
   return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
 }
 
+/* period-banner 折叠：长说明拆为 summary + details 摘要，超出时点击展开。 */
+function bannerHtml(rawHtml) {
+  const text = String(rawHtml || "").trim();
+  if (text.length < 160) return text;
+  const m = text.match(/^([^。：:]{2,40}?[：:])([\s\S]*)$/);
+  if (!m) return `<details class="banner-details"><summary>说明</summary>${text}</details>`;
+  return `<details class="banner-details"><summary>${m[1]}…</summary>${text}</details>`;
+}
+
 /* —— 坐标系：底图高德 GCJ-02 ——
  * 点位 lat/lng：国内地图/高德取点 → "gcj"（默认，不再二次加密）
  * 浏览器 GPS / 国际坐标 → "wgs"（做 WGS84→GCJ） */
@@ -651,15 +660,16 @@ function updatePeriodCopy() {
     } else if (admin) {
       boundNote = `${unitLine}。${boundNote}`;
     }
-    document.getElementById("period-banner").innerHTML =
+    document.getElementById("period-banner").innerHTML = bannerHtml(
       `<strong>${esc(districtF)}</strong>：调研事件 <strong>${evN}</strong> 处 · 常年/用户图层 <strong>${hiN}</strong> 处。${boundNote}`
-      + ` <button type="button" class="jump-map" data-jump="report">← 区域分析</button>`;
+      + ` <button type="button" class="jump-map" data-jump="report">← 区域分析</button>`
+    );
     return;
   }
   const meta = PERIOD[evtF] || PERIOD.all;
   document.getElementById("evt-title").textContent = meta.title;
   document.getElementById("evt-sub").textContent = meta.sub;
-  document.getElementById("period-banner").innerHTML = meta.banner;
+  document.getElementById("period-banner").innerHTML = bannerHtml(meta.banner);
 }
 
 function fitVisible(pad) {
