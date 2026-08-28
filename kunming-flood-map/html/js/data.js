@@ -32,7 +32,7 @@ window.FLOOD_DATA = {
     { id: "J2", evt: "0716", kind: "closed", morph: "tunnel", n: "7", district: "官渡", name: "二环东路 · 昆河铁路下穿", depth: ">50 cm", duration: "约 01:00 起；08:00 多数点已处置完毕", note: "重度 6 处之一。", source: "昆水管网 / 昆明信息港", lat: 25.0355, lng: 102.7455 },
     { id: "J3", evt: "0716", kind: "closed", morph: "tunnel", n: "7", district: "官渡", name: "二环东路 · 金马立交至大树营", depth: ">50 cm", duration: "同场；08:00 基本处置完毕", note: "", source: "昆水管网 / 昆明信息港", lat: 25.038, lng: 102.744 },
     { id: "J4", evt: "0716", kind: "closed", morph: "road", n: "7", district: "五华", name: "滇缅大道 · 海源中路至黄土坡立交西口", depth: ">50 cm", duration: "同场；08:00 基本处置完毕", note: "", source: "昆水管网 / 昆明信息港", lat: 25.0665, lng: 102.668 },
-    { id: "J5", evt: "0716", kind: "closed", morph: "road", n: "7", district: "五华", name: "海源中路 · 滇缅大道至人民西路", depth: ">50 cm", duration: "同场；08:00 基本处置完毕", note: "", source: "昆水管网 / 昆明信息港", lat: 25.055, lng: 102.675 },
+    { id: "J5", evt: "0716", kind: "closed", morph: "road", n: "7", district: "五华", name: "海源中路 · 滇缅大道至人民西路", depth: ">50 cm", duration: "同场；08:00 基本处置完毕", note: "高德 POI「海源中路」主干道中段落点（102.662675,25.055072）。海源中路路段长 4km，J5/J4 同片区，针落中段便于与 J4 北段区分。", source: "昆水管网 / 昆明信息港", lat: 25.055072, lng: 102.662675 },
     { id: "J6", evt: "0716", kind: "closed", morph: "road", n: "7", district: "西山", name: "希望路与广福路交叉口", depth: ">50 cm", duration: "同场；08:00 基本处置完毕", note: "西山前卫、大商汇南；新希望观澜汇/希望汇门口。路口即广福路上的华晨路口一带。", source: "昆水管网 / 昆明信息港", lat: 24.9795, lng: 102.7125 },
     { id: "J7", evt: "0716", kind: "mid", morph: "road", n: "7", district: "官渡", name: "广福路 · 云秀路至昌宏路", depth: "30–50 cm", duration: "同场；08:00 基本处置完毕", note: "中度未断交。", source: "昆水管网 / 昆明信息港", lat: 24.991, lng: 102.748 },
     { id: "J8", evt: "0716", kind: "mid", morph: "road", n: "7", district: "官渡", name: "昌宏西路林家围段", depth: "30–50 cm", duration: "同场；08:00 基本处置完毕", note: "", source: "昆水管网 / 昆明信息港", lat: 24.996, lng: 102.752 },
@@ -54,15 +54,15 @@ window.FLOOD_DATA = {
     { id: "L3", evt: "0717", kind: "closed", morph: "road", n: "7", district: "安宁", name: "昆海湖等路段", depth: "未公开", duration: "同场", note: "太平新城交通管制范围内。", source: "昆明信息港", lat: 24.958, lng: 102.552 },
     { id: "L4", evt: "0717", kind: "closed", morph: "road", n: "7", district: "西山", name: "团结公路 · 小河村至龙坪坝", depth: "未公开", duration: "同场", note: "原文写西山混团公路。按高德「团结公路」落在西山团结街道、棋盘山北（小河村–龙坪坝），不是滇池西岸混团村。", source: "昆明信息港", lat: 25.076, lng: 102.585 },
     { id: "L5", evt: "0717", kind: "mid", morph: "road", n: "7", district: "五华", name: "滇缅大道 · 海源中路至黄土坡立交西口", depth: "最大约 40 cm", duration: "21:15 起雨；至 18 日 01:00 仍抽排", note: "与 7.16 同片复发。", source: "昆明信息港", lat: 25.0665, lng: 102.668 },
-    { id: "L6", evt: "0717", kind: "mid", morph: "road", n: "7", district: "五华", name: "海源中路 · 滇缅大道至人民西路", depth: "最大约 40 cm", duration: "同场", note: "与 7.16 同片复发。", source: "昆明信息港", lat: 25.055, lng: 102.675 },
-    { id: "L7", evt: "0717", kind: "mid", morph: "road", n: "7", district: "五华", name: "昌源北路一带", depth: "未公开", duration: "同场；人民西×昌源北有巡查", note: "五华晚间积水点。", source: "昆明信息港", lat: 25.048, lng: 102.682 },
+    { id: "L6", evt: "0717", kind: "mid", morph: "road", n: "7", district: "五华", name: "海源中路 · 滇缅大道至人民西路", depth: "最大约 40 cm", duration: "同场", note: "与 7.16 同片复发。针随 J5 同步至高德 POI「海源中路」中段（102.662675,25.055072）。", source: "昆明信息港", lat: 25.055072, lng: 102.662675 },
+    { id: "L7", evt: "0717", kind: "mid", morph: "road", n: "7", district: "五华", name: "昌源北路一带", depth: "未公开", duration: "同场；人民西×昌源北有巡查", note: "高德 POI「昌源北路」主干道路段中点（102.650718,25.071140）。原坐标偏南偏东 ~3km，已修正至此。", source: "昆明信息港", lat: 25.071140, lng: 102.650718 },
 
     { id: "Y1", evt: "0727", kind: "mid", morph: "road", n: "7", district: "官渡", name: "官渡古镇云秀路", depth: "约 20 多 cm，最深过膝", duration: "短时暴雨十余分钟起淹；夜里约 2 点退", note: "官渡社区值守抽排。非交警断交名单。店面至下方酒店近百米。取「官渡古镇（云秀路）」OSM 公交站转 GCJ，在古镇云秀路低洼段；不是西片龙马村云秀路。", source: "昆明信息港 / 8099999", lat: 24.9557, lng: 102.7585 },
 
     { id: "T1", evt: "0810", kind: "mid", morph: "road", n: "8", district: "官渡", name: "昌宏西路林家围段", depth: "未分级", duration: "6:30 戒备；10:35 全部处置完毕", note: "昆水管网 6 处之一；7.16 同址中度。文中未写断交。", source: "昆水管网（云南网）", lat: 24.996, lng: 102.752 },
     { id: "T2", evt: "0810", kind: "mid", morph: "road", n: "8", district: "官渡", name: "昌宏路中林建材城", depth: "未分级", duration: "同场；10:35 清完", note: "8.10 新点名。珥季路大澡堂同片。", source: "昆水管网（云南网）", lat: 24.989, lng: 102.752 },
     { id: "T3", evt: "0810", kind: "mid", morph: "road", n: "8", district: "官渡", name: "广福路 · 广卫立交至星耀路", depth: "未分级", duration: "同场；10:35 清完", note: "8.10 新点名路段。", source: "昆水管网（云南网）", lat: 24.984, lng: 102.762 },
-    { id: "T4", evt: "0810", kind: "mid", morph: "road", n: "8", district: "五华", name: "海源中路 · 滇缅大道至人民西路", depth: "未分级", duration: "同场；10:35 清完", note: "亨德森高新一中一带；7.16 / 7.17 同片。", source: "昆水管网（云南网）", lat: 25.055, lng: 102.675 },
+    { id: "T4", evt: "0810", kind: "mid", morph: "road", n: "8", district: "五华", name: "海源中路 · 滇缅大道至人民西路", depth: "未分级", duration: "同场；10:35 清完", note: "亨德森高新一中一带；7.16 / 7.17 同片。针随 J5 同步至高德 POI「海源中路」中段（102.662675,25.055072）。", source: "昆水管网（云南网）", lat: 25.055072, lng: 102.662675 },
     { id: "T5", evt: "0810", kind: "mid", morph: "road", n: "8", district: "官渡", name: "广福路 · 云秀路至昌宏路", depth: "未分级", duration: "同场；10:35 清完", note: "7.16 同址中度。", source: "昆水管网（云南网）", lat: 24.991, lng: 102.748 },
     { id: "T6", evt: "0810", kind: "mid", morph: "road", n: "8", district: "官渡", name: "迎海路与观景路交叉口", depth: "未分级", duration: "同场；10:35 清完", note: "8.10 新点名。坐标取广福南/滇池沿线近似。", source: "昆水管网（云南网）", lat: 24.972, lng: 102.722 },
 
